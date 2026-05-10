@@ -57,6 +57,7 @@ LOCAL_APPS = [
     "apps.tasks",
     "apps.notes",
     "apps.activities",
+    "apps.automations",
     "apps.health",
     # M6+ adds: apps.integrations, apps.automations, apps.agents, apps.ai
 ]
@@ -232,6 +233,20 @@ CELERY_TASK_ACKS_LATE = True
 CELERY_TASK_REJECT_ON_WORKER_LOST = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_TIMEZONE = TIME_ZONE
+
+# Workflow runtime — wake-up sweep schedule (PLAN.md §7.3).
+#
+# DatabaseScheduler reads from django_celery_beat's PeriodicTask table at
+# runtime, NOT from CELERY_BEAT_SCHEDULE. The entry below is documentation
+# for what should be registered as a PeriodicTask in dev/prod (a follow-up
+# data migration creates it). Tests use Celery eager mode and call
+# wake_up_sweep.apply() directly, so no Beat involvement is needed there.
+CELERY_BEAT_SCHEDULE = {
+    "automations.wake_up_sweep": {
+        "task": "automations.wake_up_sweep",
+        "schedule": 60.0,  # seconds
+    },
+}
 
 # --- CORS ---
 
