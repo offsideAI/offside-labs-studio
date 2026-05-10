@@ -48,8 +48,9 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "apps.users",
+    "apps.workspaces",
     "apps.health",
-    # M2+ adds: apps.workspaces, apps.contacts, apps.companies,
+    # M3+ adds: apps.contacts, apps.companies,
     # apps.deals, apps.tasks, apps.notes, apps.activities, apps.pipelines,
     # apps.integrations, apps.automations, apps.agents, apps.ai
 ]
@@ -141,7 +142,9 @@ SITE_ID = 1
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        # WorkspaceJWTAuthentication wraps SimpleJWT and resolves the active
+        # workspace from the X-Workspace-Id header (validated against memberships).
+        "apps.workspaces.authentication.WorkspaceJWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
@@ -150,6 +153,11 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": 50,
 }
+
+# Frontend's accept-invite landing page. Override per-environment as needed.
+INVITE_ACCEPT_URL_BASE = os.environ.get(
+    "INVITE_ACCEPT_URL_BASE", "https://app.offside.ai/accept-invite"
+)
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
