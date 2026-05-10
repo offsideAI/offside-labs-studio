@@ -4,8 +4,10 @@
 
 ## Current state (2026-05)
 
-- **Branch:** `main`. Local is **1 commit ahead of `origin/main`** (M5 frontend `f428a47`); everything through `9254b8d` is on origin.
+- **Branch:** `main`. Local is **1 commit ahead of `origin/main`** (M6 iOS `6d33a60`); everything through `c3507b1` is on origin.
 - **Latest commits (newest first):**
+  - `6d33a60` M6: iOS shell — auth + workspace picker + read-only contact/company/deal views
+  - `c3507b1` Update MEMORY.md: M5 fully complete; M6 (iOS shell) is next
   - `f428a47` M5 frontend: deals kanban + tasks/notes/activity tabs + integrated record feeds
   - `9254b8d` Update MEMORY.md to reflect M5 backend complete (frontend pending)
   - `66ab096` M5 phase 2: apps/tasks + apps/notes + apps/activities + signal handlers
@@ -33,8 +35,9 @@
   - **M3 — complete.** AppShell + cmd-K palette (cmdk) + useKeyboardShortcut hook (Cmd-K / "/" / Esc, input-aware). Settings page closes TC-6 (admin role promotion) + TC-9 (owner archive). Six new backend tests.
   - **M4 — complete.** `apps/companies` + `apps/contacts` + `apps/custom_fields` + `apps/imports` ship the records surface. Filter DSL v0 (JSON → Django Q with custom-field JSONB lookups). Frontend: contact + company list/new/detail pages, custom-fields settings (admin), CSV import wizard (upload → mapping review → commit → poll progress) with heuristic header mapper. CustomFieldsPanel renders typed inputs (text/number/select/date/etc) per CustomFieldDef. Hand-authored 0001 migrations for all four apps. Tests: 14 new — contact CRUD + filter DSL + custom field defs + CSV upload + commit + admin-only.
   - **M5 — complete.** Backend: apps/deals (Pipeline + Deal with stages JSONB on Pipeline + stage_id slug + filter DSL reuse), apps/tasks (polymorphic + status/priority enums + completed_at auto-stamp), apps/notes (Markdown + 24h edit window + audit), apps/activities (append-only + signal handlers on Contact/Company/Deal save + DEAL_STAGE_CHANGED). Shared RelatedType/ActivityKind/ActorKind enums in apps.activities.types. 17 new backend tests. Frontend: /[workspace]/deals/ DnD-kit kanban with optimistic stage_id PATCH on drag, deal new + detail pages, ActivityFeed + TasksTab + NotesTab reusable components integrated on contact + company + deal detail (replacing M4's "Coming in M5" stub). Sidebar Deals live; cmd-K reaches Deals.
-  - **M6 — pending (next).** iOS shell + auth + read-only views. Maps to TC-68, TC-71, TC-88. Needs APNs key (placeholder bundle ID is `ai.offside.crm`).
-  - **M7–M15 — pending.** Per [ROADMAP.md](./ROADMAP.md).
+  - **M6 — complete.** SwiftUI iOS client replaces the M0 brand-parity placeholder. Auth: KeychainStore wraps SecItem for JWT persistence; AuthStore (`@Observable`) holds `.unknown / .signedOut / .needsWorkspace / .ready(workspace)` state and bootstraps from Keychain on launch. Networking: APIClient singleton mirrors authFetch — Bearer + X-Workspace-Id + retry-on-401 with refresh; baseURL reads from Info.plist's OffsideApiBaseUrl with localhost ATS exception declared in Project.yml. Views: ContentView routes to LoginView / WorkspacePickerView / MainTabView; MainTabView gives Contacts / Companies / Deals / More tabs with `@Observable` list models, NavigationStack push to detail views, pull-to-refresh, ErrorBanner overlay, brand-correct StatusPill / Eyebrow / EmptyStateView components. Deal rows resolve stage_id → label against the workspace's pipelines. Editing, custom-fields panel, tasks/notes/activity feeds, push notifications, and OpenAPI Swift codegen are explicitly deferred (M13 push, codegen wiring is a follow-up commit).
+  - **M7 — pending (next).** Inngest wiring → renamed in PLAN.md §13 to "Workflow runtime v0" because we run Celery, not Inngest. apps/automations Django app: `Automation` / `AutomationRun` / `AutomationStepRun` / `HitlRequest` models + run-advancer Celery task + idempotency-keyed action handlers + Beat wake-up sweep + Django admin Run Inspector view.
+  - **M8–M15 — pending.** Per [ROADMAP.md](./ROADMAP.md).
 
 ## Locked decisions (interview Rounds 1–7)
 
