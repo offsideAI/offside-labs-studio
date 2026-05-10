@@ -1,0 +1,23 @@
+@import "@offside/ui/styles/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Product accent for Offside CRM (per PLAN.md §10) — warm clay. */
+:root {
+  --product-secondary: #c98f89;
+}
+
+/* Roboto is body type per the brand book. The next/font/google variable
+   is wired via app/layout.tsx and exposed as --font-roboto. */
+body {
+  font-family: var(--font-roboto), "Roboto", ui-sans-serif, system-ui, sans-serif;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--font-jetbrains), "JetBrains Mono", ui-monospace, monospace;
+}

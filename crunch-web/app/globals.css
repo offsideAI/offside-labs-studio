@@ -1,0 +1,21 @@
+@import "@offside/ui/styles/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Product accent for Offside Crunch (per PLAN.md §10) — warm wheat. */
+:root {
+  --product-secondary: #d9bca4;
+}
+
+body {
+  font-family: var(--font-roboto), "Roboto", ui-sans-serif, system-ui, sans-serif;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--font-jetbrains), "JetBrains Mono", ui-monospace, monospace;
+}
