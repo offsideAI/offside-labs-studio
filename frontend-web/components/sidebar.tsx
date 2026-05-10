@@ -23,15 +23,11 @@ const NAV: NavItem[] = [
     label: "Contacts",
     href: (slug) => `/${slug}/contacts`,
     match: (pathname, slug) => pathname.startsWith(`/${slug}/contacts`),
-    comingSoon: true,
-    badge: "M4",
   },
   {
     label: "Companies",
     href: (slug) => `/${slug}/companies`,
     match: (pathname, slug) => pathname.startsWith(`/${slug}/companies`),
-    comingSoon: true,
-    badge: "M4",
   },
   {
     label: "Deals",

@@ -51,9 +51,24 @@ export const CommandPalette = ({ open, onOpenChange, workspaces, activeSlug }: C
               <span>Home</span>
               <span className="cmdk-hint">{`/${activeSlug}`}</span>
             </Command.Item>
+            <Command.Item onSelect={() => navigate(`/${activeSlug}/contacts`)} className="cmdk-item">
+              <span>Contacts</span>
+              <span className="cmdk-hint">{`/${activeSlug}/contacts`}</span>
+            </Command.Item>
+            <Command.Item onSelect={() => navigate(`/${activeSlug}/companies`)} className="cmdk-item">
+              <span>Companies</span>
+              <span className="cmdk-hint">{`/${activeSlug}/companies`}</span>
+            </Command.Item>
             <Command.Item onSelect={() => navigate(`/${activeSlug}/settings`)} className="cmdk-item">
               <span>Settings</span>
               <span className="cmdk-hint">{`/${activeSlug}/settings`}</span>
+            </Command.Item>
+            <Command.Item
+              onSelect={() => navigate(`/${activeSlug}/settings/custom-fields`)}
+              className="cmdk-item"
+            >
+              <span>Custom fields</span>
+              <span className="cmdk-hint">{`/${activeSlug}/settings/custom-fields`}</span>
             </Command.Item>
             <Command.Item onSelect={() => navigate("/brand")} className="cmdk-item">
               <span>Brand tokens</span>

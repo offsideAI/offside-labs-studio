@@ -266,4 +266,255 @@ export const useAcceptInvitation = () => {
   });
 };
 
+// --- M4: Contacts, Companies, Custom field defs ---
+
+export interface Contact {
+  id: number;
+  first_name: string;
+  last_name: string;
+  primary_email: string;
+  phones: Array<{ label?: string; number: string }>;
+  title: string;
+  company: number | null;
+  owner: number | null;
+  lifecycle_stage: string;
+  source: string;
+  custom: Record<string, unknown>;
+  tags: string[];
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface Company {
+  id: number;
+  name: string;
+  domain: string;
+  size_band: string;
+  industry: string;
+  owner: number | null;
+  custom: Record<string, unknown>;
+  tags: string[];
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export type CustomFieldType =
+  | "text"
+  | "long_text"
+  | "number"
+  | "select"
+  | "multi_select"
+  | "date"
+  | "datetime"
+  | "boolean"
+  | "url"
+  | "email"
+  | "phone"
+  | "relation";
+
+export type CustomFieldEntityType = "contact" | "company" | "deal" | "task" | "note";
+
+export interface CustomFieldDef {
+  id: number;
+  entity_type: CustomFieldEntityType;
+  key: string;
+  label: string;
+  type: CustomFieldType;
+  options: string[];
+  required: boolean;
+  indexed: boolean;
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+const buildContactsUrl = (filter?: Record<string, unknown>) => {
+  if (!filter) return "/api/contacts/";
+  return `/api/contacts/?filter=${encodeURIComponent(JSON.stringify(filter))}`;
+};
+
+const buildCompaniesUrl = (filter?: Record<string, unknown>) => {
+  if (!filter) return "/api/companies/";
+  return `/api/companies/?filter=${encodeURIComponent(JSON.stringify(filter))}`;
+};
+
+// --- Contacts ---
+
+export const useContacts = (
+  workspaceId: number | null | undefined,
+  filter?: Record<string, unknown>,
+) =>
+  useQuery({
+    queryKey: ["contacts", workspaceId, filter],
+    queryFn: () =>
+      fetcher.authFetch<Paginated<Contact>>(buildContactsUrl(filter), {
+        workspaceId: workspaceId ?? undefined,
+      }),
+    enabled: Boolean(workspaceId) && apiTokens.hasSession(),
+  });
+
+export const useContact = (workspaceId: number | null | undefined, contactId: number | string) =>
+  useQuery({
+    queryKey: ["contact", workspaceId, String(contactId)],
+    queryFn: () =>
+      fetcher.authFetch<Contact>(`/api/contacts/${contactId}/`, {
+        workspaceId: workspaceId ?? undefined,
+      }),
+    enabled: Boolean(workspaceId && contactId) && apiTokens.hasSession(),
+  });
+
+export const useCreateContact = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Partial<Contact>) =>
+      fetcher.authFetch<Contact>("/api/contacts/", {
+        method: "POST",
+        body: input,
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["contacts", workspaceId] }),
+  });
+};
+
+export const useUpdateContact = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: number | string; patch: Partial<Contact> }) =>
+      fetcher.authFetch<Contact>(`/api/contacts/${input.id}/`, {
+        method: "PATCH",
+        body: input.patch,
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["contacts", workspaceId] });
+      qc.invalidateQueries({ queryKey: ["contact", workspaceId, String(vars.id)] });
+    },
+  });
+};
+
+export const useDeleteContact = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number | string) =>
+      fetcher.authFetch<unknown>(`/api/contacts/${id}/`, {
+        method: "DELETE",
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["contacts", workspaceId] }),
+  });
+};
+
+// --- Companies ---
+
+export const useCompanies = (
+  workspaceId: number | null | undefined,
+  filter?: Record<string, unknown>,
+) =>
+  useQuery({
+    queryKey: ["companies", workspaceId, filter],
+    queryFn: () =>
+      fetcher.authFetch<Paginated<Company>>(buildCompaniesUrl(filter), {
+        workspaceId: workspaceId ?? undefined,
+      }),
+    enabled: Boolean(workspaceId) && apiTokens.hasSession(),
+  });
+
+export const useCompany = (workspaceId: number | null | undefined, companyId: number | string) =>
+  useQuery({
+    queryKey: ["company", workspaceId, String(companyId)],
+    queryFn: () =>
+      fetcher.authFetch<Company>(`/api/companies/${companyId}/`, {
+        workspaceId: workspaceId ?? undefined,
+      }),
+    enabled: Boolean(workspaceId && companyId) && apiTokens.hasSession(),
+  });
+
+export const useCreateCompany = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Partial<Company>) =>
+      fetcher.authFetch<Company>("/api/companies/", {
+        method: "POST",
+        body: input,
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["companies", workspaceId] }),
+  });
+};
+
+export const useUpdateCompany = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: number | string; patch: Partial<Company> }) =>
+      fetcher.authFetch<Company>(`/api/companies/${input.id}/`, {
+        method: "PATCH",
+        body: input.patch,
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["companies", workspaceId] });
+      qc.invalidateQueries({ queryKey: ["company", workspaceId, String(vars.id)] });
+    },
+  });
+};
+
+export const useDeleteCompany = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number | string) =>
+      fetcher.authFetch<unknown>(`/api/companies/${id}/`, {
+        method: "DELETE",
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["companies", workspaceId] }),
+  });
+};
+
+// --- Custom field defs ---
+
+export const useCustomFieldDefs = (
+  workspaceId: number | null | undefined,
+  entityType?: CustomFieldEntityType,
+) =>
+  useQuery({
+    queryKey: ["custom-field-defs", workspaceId, entityType],
+    queryFn: () =>
+      fetcher.authFetch<Paginated<CustomFieldDef>>(
+        entityType
+          ? `/api/custom-field-defs/?entity_type=${entityType}`
+          : "/api/custom-field-defs/",
+        { workspaceId: workspaceId ?? undefined },
+      ),
+    enabled: Boolean(workspaceId) && apiTokens.hasSession(),
+  });
+
+export const useCreateCustomFieldDef = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Partial<CustomFieldDef>) =>
+      fetcher.authFetch<CustomFieldDef>("/api/custom-field-defs/", {
+        method: "POST",
+        body: input,
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["custom-field-defs", workspaceId] }),
+  });
+};
+
+export const useDeleteCustomFieldDef = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number | string) =>
+      fetcher.authFetch<unknown>(`/api/custom-field-defs/${id}/`, {
+        method: "DELETE",
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["custom-field-defs", workspaceId] }),
+  });
+};
+
 export { AuthFetchError };
