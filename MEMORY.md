@@ -4,8 +4,10 @@
 
 ## Current state (2026-05)
 
-- **Branch:** `main`. Local is **2 commits ahead of `origin/main`** (M5 phase 1 deals + M5 phase 2 tasks/notes/activities); everything through `03c692b` is on origin.
+- **Branch:** `main`. Local is **1 commit ahead of `origin/main`** (M5 frontend `f428a47`); everything through `9254b8d` is on origin.
 - **Latest commits (newest first):**
+  - `f428a47` M5 frontend: deals kanban + tasks/notes/activity tabs + integrated record feeds
+  - `9254b8d` Update MEMORY.md to reflect M5 backend complete (frontend pending)
   - `66ab096` M5 phase 2: apps/tasks + apps/notes + apps/activities + signal handlers
   - `12b53e9` M5 phase 1: apps/deals — Pipeline + Deal + filter DSL reuse
   - `03c692b` Update MEMORY.md to reflect M4 complete + M5 ready to start
@@ -30,8 +32,9 @@
   - **M2 — complete.** `apps/workspaces` (Workspace + Membership + Role + Invitation) + role-based permissions + WorkspaceJWTAuthentication via X-Workspace-Id header + Resend magic-link invites. Frontend: login + signup + onboarding + accept-invite + protected /[workspace]/ route group with TanStack Query v5.
   - **M3 — complete.** AppShell + cmd-K palette (cmdk) + useKeyboardShortcut hook (Cmd-K / "/" / Esc, input-aware). Settings page closes TC-6 (admin role promotion) + TC-9 (owner archive). Six new backend tests.
   - **M4 — complete.** `apps/companies` + `apps/contacts` + `apps/custom_fields` + `apps/imports` ship the records surface. Filter DSL v0 (JSON → Django Q with custom-field JSONB lookups). Frontend: contact + company list/new/detail pages, custom-fields settings (admin), CSV import wizard (upload → mapping review → commit → poll progress) with heuristic header mapper. CustomFieldsPanel renders typed inputs (text/number/select/date/etc) per CustomFieldDef. Hand-authored 0001 migrations for all four apps. Tests: 14 new — contact CRUD + filter DSL + custom field defs + CSV upload + commit + admin-only.
-  - **M5 — backend complete; frontend kanban/feeds pending.** apps/deals (Pipeline + Deal with stages JSONB on Pipeline + stage_id slug on Deal + filter DSL reuse), apps/tasks (polymorphic via small enum + ID; status/priority enums; completed_at auto-stamp on transition into 'done'; cancelled state; TASK_RELATABLE = {contact, company, deal}), apps/notes (Markdown body + 24-hour edit window with edit_log audit JSONB beyond that), apps/activities (append-only Activity model + signal handlers on Contact/Company/Deal save + DEAL_STAGE_CHANGED on stage_id update_fields). Shared `RelatedType` / `ActivityKind` / `ActorKind` enums in apps.activities.types. ActivityViewSet is read-only (rows authored by signals, not the API). 17 new tests across all four apps. **Frontend kanban (DnD-kit), real activity feed on every record (replacing M4 stub), tasks tab + notes tab — pending in next session.**
-  - **M6–M15 — pending.** Per [ROADMAP.md](./ROADMAP.md).
+  - **M5 — complete.** Backend: apps/deals (Pipeline + Deal with stages JSONB on Pipeline + stage_id slug + filter DSL reuse), apps/tasks (polymorphic + status/priority enums + completed_at auto-stamp), apps/notes (Markdown + 24h edit window + audit), apps/activities (append-only + signal handlers on Contact/Company/Deal save + DEAL_STAGE_CHANGED). Shared RelatedType/ActivityKind/ActorKind enums in apps.activities.types. 17 new backend tests. Frontend: /[workspace]/deals/ DnD-kit kanban with optimistic stage_id PATCH on drag, deal new + detail pages, ActivityFeed + TasksTab + NotesTab reusable components integrated on contact + company + deal detail (replacing M4's "Coming in M5" stub). Sidebar Deals live; cmd-K reaches Deals.
+  - **M6 — pending (next).** iOS shell + auth + read-only views. Maps to TC-68, TC-71, TC-88. Needs APNs key (placeholder bundle ID is `ai.offside.crm`).
+  - **M7–M15 — pending.** Per [ROADMAP.md](./ROADMAP.md).
 
 ## Locked decisions (interview Rounds 1–7)
 
