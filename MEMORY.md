@@ -4,8 +4,9 @@
 
 ## Current state (2026-05)
 
-- **Branch:** `main`. Local is **1 commit ahead of `origin/main`** (M7 `e69dfa3`); everything through `eeef2cb` is on origin.
+- **Branch:** `main`. Up to date with `origin/main` through `9bd7e27`. M0–M7 all shipped and pushed; doc-sync commit (PRD/ROADMAP checkboxes) pending in working tree.
 - **Latest commits (newest first):**
+  - `9bd7e27` Update MEMORY.md: M7 complete; M8 (workflow node-graph editor v1) is next
   - `e69dfa3` M7: workflow runtime v0 — apps/automations + run_advancer + idempotency + HITL
   - `eeef2cb` Update MEMORY.md: M6 complete; M7 (workflow runtime v0) is next
   - `6d33a60` M6: iOS shell — auth + workspace picker + read-only contact/company/deal views
@@ -110,23 +111,22 @@ Located at `../radianceskincare-app/saucycart-com-backend-django/`. **Reference 
 
 ## Resume points
 
-M4 is complete. **Next milestone is M5 (deals + pipelines + tasks + notes + activities).**
+M7 is complete. **Next milestone is M8 (workflow node-graph editor v1 — React Flow).**
 
-Verify M4 locally first:
-1. `pnpm install` (no new JS deps in CSV import). `pnpm backend:up` + `pnpm backend:migrate` (runs 4 new migrations: contacts/companies/custom_fields/imports) + `pnpm backend:test` (44 backend tests; 14 new from M4).
-2. `pnpm dev` → /{slug}/contacts → "+ New contact" → fill standard + custom fields → save → land on detail page → "Edit" → modify → "Archive". Same for /{slug}/companies. Detail pages show linked records (TC-13).
-3. /{slug}/settings/custom-fields → add a `lead_score` number field on contacts. Re-open a contact to see the field on the form.
-4. /{slug}/contacts/import → upload a CSV with `First Name,Last Name,Email` headers → review heuristic mapping → commit → progress polls every 1.5s → done. Errors show inline.
+Verify M7 locally first:
+1. `pnpm backend:up` + `pnpm backend:migrate` (apps/automations 0001 migration creates Automation/AutomationRun/AutomationStepRun/HitlRequest/AgentPolicy) + `pnpm backend:test` (14 new automation tests including chaos-replay + wake-up sweep round-trip).
+2. Django admin → Automations → create a tiny graph (`start → action: noop → end`) → manually create an AutomationRun → confirm `run_advancer` walks it to `COMPLETED` and AutomationStepRun rows show input/output/cost/latency.
+3. Hit HITL: change the noop to an `approval` node → run → confirm status flips to `AWAITING_APPROVAL`, then call `resume_after_hitl` with a signed token to advance.
+4. Smoke the idempotency story: kill the worker mid-step (or just rerun `run_advancer` on a COMPLETED run) → no double side effect.
 
-To start M5 from a cold context:
-1. **`apps.deals`** — Deal + Pipeline + Stage models. Pipeline holds an ordered JSONB stages array. Deal has FK pipeline + FK contact + FK company + value_cents + currency + expected_close.
-2. **`apps.tasks`** — Task with polymorphic `(related_type, related_id)` (small enum + ID, NOT GenericForeignKey). Status, priority, due_at, owner FK.
-3. **`apps.notes`** — Markdown body with 24h edit window; audit row created on edits beyond that.
-4. **`apps.activities`** — append-only event log. Signal hooks on Contact/Company/Deal/Task save fire activity rows. Polymorphic `(related_type, related_id)`.
-5. **Frontend** — kanban view (DnD-kit) for /{slug}/deals; deal/task/note detail pages; real activity feed on every record (replacing M4's "Coming in M5" stub).
-6. **Tests** — TC-15..TC-21.
+To start M8 from a cold context:
+1. **Frontend canvas** — React Flow (or DnD-kit fallback) at `/[workspace]/automations/` with node palette (trigger, action, delay, branch, approval, end), node config drawer (right-side panel), connection validation, autosave to draft, publish-as-version flow.
+2. **Backend** — extend `apps.automations` with `AutomationVersion` table (or version column on Automation) so publish creates immutable graph snapshots; running automations always reference a version. Add DRF serializers + `/api/automations/{id}/versions/` endpoint.
+3. **Describe-in-English** — Claude prompt `automations.graph_from_nl.v1` taking a description + schema docs (entities + custom fields) returning a graph JSON. Streams into the canvas with a "review before save" gate.
+4. **Run inspector UI** — surface AutomationStepRun rows (already in Django admin) into a per-run web page with step input/output/cost/latency + retry/cancel.
+5. **Tests** — TC-29..TC-32 (publish a workflow, edit + republish, NL-to-graph happy path, cancel a stuck run).
 
-Open `§14.1` items still defer-able. M6 (iOS) needs APNs key; M11 (AI) needs token budget config.
+Open `§14.1` items still defer-able. M11 (AI) needs token budget config; M10 (Gmail) needs GCP Pub/Sub topic + verified domain (~1 day setup).
 
 ## Revision log
 
@@ -148,6 +148,16 @@ Open `§14.1` items still defer-able. M6 (iOS) needs APNs key; M11 (AI) needs to
 - **2026-05** — `41b14ce` completed M4 frontend (excl. CSV import): TanStack Query hooks for contacts/companies/custom-field-defs, list + new + detail pages for both records, CustomFieldsPanel rendering typed inputs (text/number/select/date/etc) per CustomFieldDef, /[workspace]/settings/custom-fields/ admin UI. Sidebar Contacts + Companies links flipped from comingSoon placeholders to live routes. CommandPalette gains Contacts / Companies / Custom fields under Navigate.
 - **2026-05** — pushed M4 backend + frontend to `origin/main`.
 - **2026-05** — `b34ebec` completed M4 (last piece): apps/imports with ImportRun model (workspace + entity_type + raw_content + mapping + status counts + errors[]), heuristic header→field mapper, Celery task that streams CSV row-by-row, multipart /upload + /commit endpoints, ImportWizard component (upload → mapping review → progress polling at 1.5s) routed at /[workspace]/{contacts,companies}/import/. authFetch grew FormData support. 7 new backend tests. M4 done.
+- **2026-05** — `03c692b` updated MEMORY.md to mark M4 complete + add M5 cold-context guide.
+- **2026-05** — `12b53e9` completed M5 phase 1: apps/deals with Pipeline (stages JSONB) + Deal (FK pipeline + FK contact + FK company + value_cents + currency + expected_close + stage_id slug) + filter DSL reuse. WorkspaceScopedManager + IsWorkspaceManager gating writes.
+- **2026-05** — `66ab096` completed M5 phase 2: apps/tasks (polymorphic related_type/related_id enum + ID pattern, NOT GenericForeignKey; status/priority enums; completed_at auto-stamp), apps/notes (Markdown body + 24h edit window + audit log on edits past that), apps/activities (append-only Activity rows + signal handlers on Contact/Company/Deal save firing activity events including DEAL_STAGE_CHANGED), shared RelatedType/ActivityKind/ActorKind enums in apps.activities.types. 17 new backend tests.
+- **2026-05** — `9254b8d` updated MEMORY.md to reflect M5 backend complete (frontend pending).
+- **2026-05** — `f428a47` completed M5 frontend: /[workspace]/deals/ DnD-kit kanban with optimistic stage_id PATCH on drag, deal new + detail pages, ActivityFeed + TasksTab + NotesTab reusable components integrated on contact + company + deal detail (replacing M4's "Coming in M5" stub). Sidebar Deals live; cmd-K reaches Deals. M5 done.
+- **2026-05** — `c3507b1` updated MEMORY.md to mark M5 fully complete + add M6 cold-context guide.
+- **2026-05** — `6d33a60` completed M6: SwiftUI iOS client. KeychainStore (SecItem wrapper for JWT persistence), AuthStore (`@Observable` with `.unknown/.signedOut/.needsWorkspace/.ready(workspace)` state + Keychain bootstrap on launch), APIClient singleton (mirrors authFetch — Bearer + X-Workspace-Id + retry-on-401 with refresh; baseURL via Info.plist's OffsideApiBaseUrl + localhost ATS exception in Project.yml). ContentView routes to LoginView / WorkspacePickerView / MainTabView; MainTabView has Contacts/Companies/Deals/More tabs with `@Observable` list models, NavigationStack push to detail views, pull-to-refresh, ErrorBanner overlay, brand-correct StatusPill / Eyebrow / EmptyStateView components. Deal rows resolve stage_id → label against workspace pipelines. Editing, custom-fields panel, tasks/notes/activity feeds, push notifications, and OpenAPI Swift codegen explicitly deferred (M13 push, codegen is a follow-up). M6 done.
+- **2026-05** — `eeef2cb` updated MEMORY.md to mark M6 complete + add M7 cold-context guide.
+- **2026-05** — `e69dfa3` completed M7: apps/automations ships the durable workflow state machine. Models: Automation + AutomationRun + AutomationStepRun + HitlRequest + AgentPolicy with status/run-state enums and the load-bearing `idempotency_key` unique constraint on AutomationStepRun. graph.py defines the JSON schema (action / delay / approval / branch / wait_for_event / end), template resolution (`{{ a.b.c }}` against state_snapshot), branch-condition evaluation. actions.py is the @register-decorated dispatcher with built-ins (noop, log, crm.create_contact, crm.move_deal_stage). tasks.py owns run_advancer (SELECT FOR UPDATE on the run row, idempotency-key short-circuit on replay, tail-recursive re-enqueue) + wake_up_sweep + resume_after_hitl. hitl.py wraps PyJWT for purpose-claim'd approval tokens with 7-day default TTL. Django admin gets a Run Inspector with inline AutomationStepRun rows. 14 new tests including the load-bearing replay-doesn't-double-create-contact (TC-34 chaos slice) + wake-up sweep round-trip + approval routing. CELERY_BEAT_SCHEDULE documents the wake_up_sweep entry pending a PeriodicTask data migration. M7 done.
+- **2026-05** — added `[✅]/[🏗️]/[☑️]` status checkboxes across every epic / user story / engineering task / acceptance criterion in ROADMAP.md and across every FR / NFR / POST + user story + acceptance criterion in PRD.md. Each FR carries a "Roadmap mapping" line pointing at the milestone(s) shipping it. PRD bumped to v2 / ROADMAP gets a Revision 2 entry. CLAUDE.md gains a "Current milestone progress" section + the legend reference. MEMORY.md (this file) bumped to point at M8 as next. Documentation now visibly consistent with implementation status across the four docs.
 
 ---
 

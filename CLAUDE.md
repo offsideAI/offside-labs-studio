@@ -7,10 +7,16 @@ This is the Offside Studio Suite monorepo. **Offside CRM** is product #1 of 4 (C
 ## Read these in order
 
 1. **[PLAN.md](./PLAN.md)** — architecture, stack, monorepo layout, automation engine, brand system, 16 milestones (M0–M15) and 15 post-MVP placeholder phases.
-2. **[PRD.md](./PRD.md)** — product requirements with stable IDs (`FR-1` … `FR-25`, `NFR-1` … `NFR-8`, `POST-1` … `POST-15`).
+2. **[PRD.md](./PRD.md)** — product requirements with stable IDs (`FR-1` … `FR-25`, `NFR-1` … `NFR-8`, `POST-1` … `POST-15`). Every FR/NFR/POST carries a `[✅]/[🏗️]/[☑️]` status checkbox.
 3. **[TESTING.md](./TESTING.md)** — 91 user-perspective E2E test cases (`TC-1` … `TC-91`) across 24 functional areas.
-4. **[ROADMAP.md](./ROADMAP.md)** — phases mapped 1:1 to epics, with user stories + engineering tasks + acceptance criteria + estimates.
+4. **[ROADMAP.md](./ROADMAP.md)** — phases mapped 1:1 to epics, with user stories + engineering tasks + acceptance criteria + estimates. Every milestone/story/task carries the same `[✅]/[🏗️]/[☑️]` status checkbox.
 5. **[MEMORY.md](./MEMORY.md)** — running record of state, locked decisions, and watch-outs. Living document.
+
+## Current milestone progress
+
+- **Shipped on `main`:** M0 (scaffold) · M1 (auth) · M2 (workspaces) · M3 (cmd-K shell) · M4 (records + CSV import) · M5 (deals + tasks + notes + activities) · M6 (iOS read-only shell) · M7 (durable workflow runtime).
+- **Next up:** **M8 — workflow node-graph editor (React Flow)** with describe-in-English Claude prompt. Maps to TC-29..TC-32.
+- **Status checkbox legend (PRD.md + ROADMAP.md):** `[✅]` implemented · `[🏗️]` partially implemented · `[☑️]` pending. Keep PRD and ROADMAP checkboxes synced when you complete or partially deliver a piece of work.
 
 ## Stack at a glance
 
