@@ -115,6 +115,12 @@ class CreateInvitationSerializer(serializers.ModelSerializer):
         return value
 
 
+class UpdateMembershipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Membership
+        fields = ("role",)
+
+
 class PublicInvitationDetailSerializer(serializers.ModelSerializer):
     """Returned to the unauthenticated invitee landing on the magic link."""
 

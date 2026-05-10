@@ -180,3 +180,144 @@ def test_invalid_workspace_header_is_ignored() -> None:
     resp = client.get("/api/memberships/")
     # Header doesn't validate → request.workspace_id=None → permission denied.
     assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+
+# --- M3: settings endpoints (TC-6 role promotion, TC-9 workspace archive) ---
+
+
+@pytest.mark.django_db
+def test_admin_can_promote_a_rep() -> None:
+    """TC-6 — admin can change a teammate's role to manager."""
+    owner = _verified_user("owner@example.com")
+    rep = _verified_user("rep@example.com")
+    workspace = Workspace.objects.create(name="A", slug="a", created_by=owner)
+    Membership.objects.create(workspace=workspace, user=owner, role=Role.OWNER)
+    rep_membership = Membership.objects.create(workspace=workspace, user=rep, role=Role.REP)
+
+    client = APIClient()
+    access = _login(client, "owner@example.com")
+    client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {access}",
+        HTTP_X_WORKSPACE_ID=str(workspace.id),
+    )
+
+    resp = client.patch(
+        f"/api/memberships/{rep_membership.id}/",
+        {"role": Role.MANAGER},
+        format="json",
+    )
+    assert resp.status_code == status.HTTP_200_OK, resp.content
+    rep_membership.refresh_from_db()
+    assert rep_membership.role == Role.MANAGER
+
+
+@pytest.mark.django_db
+def test_non_admin_cannot_promote() -> None:
+    owner = _verified_user("owner@example.com")
+    rep_a = _verified_user("rep_a@example.com")
+    rep_b = _verified_user("rep_b@example.com")
+    workspace = Workspace.objects.create(name="A", slug="a", created_by=owner)
+    Membership.objects.create(workspace=workspace, user=owner, role=Role.OWNER)
+    Membership.objects.create(workspace=workspace, user=rep_a, role=Role.REP)
+    rep_b_m = Membership.objects.create(workspace=workspace, user=rep_b, role=Role.REP)
+
+    client = APIClient()
+    access = _login(client, "rep_a@example.com")
+    client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {access}",
+        HTTP_X_WORKSPACE_ID=str(workspace.id),
+    )
+
+    resp = client.patch(
+        f"/api/memberships/{rep_b_m.id}/", {"role": Role.MANAGER}, format="json"
+    )
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db
+def test_cannot_demote_owner_via_patch() -> None:
+    owner = _verified_user("owner@example.com")
+    workspace = Workspace.objects.create(name="A", slug="a", created_by=owner)
+    owner_m = Membership.objects.create(workspace=workspace, user=owner, role=Role.OWNER)
+
+    client = APIClient()
+    access = _login(client, "owner@example.com")
+    client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {access}",
+        HTTP_X_WORKSPACE_ID=str(workspace.id),
+    )
+
+    resp = client.patch(
+        f"/api/memberships/{owner_m.id}/", {"role": Role.ADMIN}, format="json"
+    )
+    assert resp.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.django_db
+def test_owner_archives_workspace() -> None:
+    """TC-9 — owner soft-deletes the workspace."""
+    owner = _verified_user("owner@example.com")
+    workspace = Workspace.objects.create(name="A", slug="a", created_by=owner)
+    Membership.objects.create(workspace=workspace, user=owner, role=Role.OWNER)
+
+    client = APIClient()
+    access = _login(client, "owner@example.com")
+    client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {access}",
+        HTTP_X_WORKSPACE_ID=str(workspace.id),
+    )
+
+    resp = client.post(f"/api/workspaces/{workspace.id}/archive/")
+    assert resp.status_code == status.HTTP_200_OK, resp.content
+
+    workspace.refresh_from_db()
+    assert workspace.deleted_at is not None
+
+    # Workspace no longer appears in the list.
+    list_resp = client.get("/api/workspaces/")
+    assert workspace.slug not in {w["slug"] for w in list_resp.json()["results"]}
+
+
+@pytest.mark.django_db
+def test_admin_cannot_archive_workspace() -> None:
+    owner = _verified_user("owner@example.com")
+    admin = _verified_user("admin@example.com")
+    workspace = Workspace.objects.create(name="A", slug="a", created_by=owner)
+    Membership.objects.create(workspace=workspace, user=owner, role=Role.OWNER)
+    Membership.objects.create(workspace=workspace, user=admin, role=Role.ADMIN)
+
+    client = APIClient()
+    access = _login(client, "admin@example.com")
+    client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {access}",
+        HTTP_X_WORKSPACE_ID=str(workspace.id),
+    )
+
+    resp = client.post(f"/api/workspaces/{workspace.id}/archive/")
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+    workspace.refresh_from_db()
+    assert workspace.deleted_at is None
+
+
+@pytest.mark.django_db
+def test_archive_must_match_active_workspace() -> None:
+    """Owner of A and owner of B should not be able to archive A while X-Workspace-Id points at B."""
+    user = _verified_user("user@example.com")
+    ws_a = Workspace.objects.create(name="A", slug="a", created_by=user)
+    ws_b = Workspace.objects.create(name="B", slug="b", created_by=user)
+    Membership.objects.create(workspace=ws_a, user=user, role=Role.OWNER)
+    Membership.objects.create(workspace=ws_b, user=user, role=Role.OWNER)
+
+    client = APIClient()
+    access = _login(client, "user@example.com")
+    client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {access}",
+        HTTP_X_WORKSPACE_ID=str(ws_b.id),
+    )
+
+    resp = client.post(f"/api/workspaces/{ws_a.id}/archive/")
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+    ws_a.refresh_from_db()
+    assert ws_a.deleted_at is None

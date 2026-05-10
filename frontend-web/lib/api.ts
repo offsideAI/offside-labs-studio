@@ -181,6 +181,18 @@ export const useCreateWorkspace = () => {
   });
 };
 
+export const useArchiveWorkspace = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      fetcher.authFetch<{ id: number; deleted_at: string }>(
+        `/api/workspaces/${workspaceId}/archive/`,
+        { method: "POST", workspaceId: workspaceId ?? undefined },
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workspaces"] }),
+  });
+};
+
 // --- Memberships (workspace-scoped — requires X-Workspace-Id) ---
 
 export const useMemberships = (workspaceId: number | null | undefined) =>
@@ -192,6 +204,19 @@ export const useMemberships = (workspaceId: number | null | undefined) =>
       }),
     enabled: Boolean(workspaceId) && apiTokens.hasSession(),
   });
+
+export const useUpdateMembershipRole = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { membershipId: number; role: string }) =>
+      fetcher.authFetch<Membership>(`/api/memberships/${input.membershipId}/`, {
+        method: "PATCH",
+        body: { role: input.role },
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["memberships", workspaceId] }),
+  });
+};
 
 // --- Invitations (workspace-scoped) ---
 

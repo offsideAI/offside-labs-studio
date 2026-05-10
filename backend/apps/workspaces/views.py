@@ -12,13 +12,14 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .models import Invitation, Membership, Role, Workspace
-from .permissions import IsWorkspaceAdmin, IsWorkspaceMember
+from .permissions import IsWorkspaceAdmin, IsWorkspaceMember, IsWorkspaceOwner
 from .serializers import (
     CreateInvitationSerializer,
     CreateWorkspaceSerializer,
     InvitationSerializer,
     MembershipSerializer,
     PublicInvitationDetailSerializer,
+    UpdateMembershipSerializer,
     WorkspaceSerializer,
 )
 from .tasks import send_invitation_email
@@ -53,12 +54,31 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
         out = WorkspaceSerializer(workspace, context={"request": request})
         return Response(out.data, status=status.HTTP_201_CREATED)
 
+    @action(detail=True, methods=["post"], permission_classes=[IsWorkspaceOwner])
+    def archive(self, request, pk=None):  # type: ignore[no-untyped-def]
+        """Soft-delete the workspace. Only the owner of the active workspace can call this,
+        and only if the URL pk matches the active workspace."""
+        workspace = self.get_object()
+        if str(getattr(request, "workspace_id", None)) != str(workspace.pk):
+            return Response(
+                {"detail": "Archive must target the active workspace (X-Workspace-Id)."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if workspace.deleted_at:
+            return Response(
+                {"detail": "This workspace is already archived."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        workspace.deleted_at = timezone.now()
+        workspace.save(update_fields=["deleted_at"])
+        return Response({"id": workspace.pk, "deleted_at": workspace.deleted_at})
 
-class MembershipViewSet(viewsets.ReadOnlyModelViewSet):
-    """List memberships for the active workspace."""
 
-    serializer_class = MembershipSerializer
+class MembershipViewSet(viewsets.ModelViewSet):
+    """List memberships for the active workspace; admins can PATCH a role."""
+
     permission_classes = [IsWorkspaceMember]
+    http_method_names = ["get", "patch", "head", "options"]
 
     def get_queryset(self):  # type: ignore[no-untyped-def]
         workspace_id = getattr(self.request, "workspace_id", None)
@@ -69,6 +89,33 @@ class MembershipViewSet(viewsets.ReadOnlyModelViewSet):
             .active()
             .select_related("user", "workspace")
         )
+
+    def get_serializer_class(self):  # type: ignore[no-untyped-def]
+        if self.action in {"update", "partial_update"}:
+            return UpdateMembershipSerializer
+        return MembershipSerializer
+
+    def get_permissions(self):  # type: ignore[no-untyped-def]
+        # Read = any active member; write = admins (owner + admin).
+        if self.action in {"update", "partial_update"}:
+            return [IsWorkspaceAdmin()]
+        return [IsWorkspaceMember()]
+
+    def perform_update(self, serializer):  # type: ignore[no-untyped-def]
+        from rest_framework.exceptions import ValidationError
+
+        membership = self.get_object()
+        new_role = serializer.validated_data.get("role")
+        # Owners can only be modified via a dedicated transfer-ownership flow (post-MVP).
+        if membership.role == Role.OWNER:
+            raise ValidationError(
+                {"detail": "Owners cannot be demoted via PATCH; transfer ownership instead."}
+            )
+        if new_role == Role.OWNER:
+            raise ValidationError(
+                {"detail": "Cannot promote to Owner via PATCH; transfer ownership instead."}
+            )
+        serializer.save()
 
 
 class InvitationViewSet(viewsets.ModelViewSet):
