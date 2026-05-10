@@ -4,8 +4,12 @@
 
 ## Current state (2026-05)
 
-- **Branch:** `main`. Local is **1 commit ahead of `origin/main`** (M3); everything through `96ff3fd` is on origin.
+- **Branch:** `main`. Local is **4 commits ahead of `origin/main`** (M4 backend / M4 frontend / MEMORY / M4 CSV import); everything through `41b14ce` is on origin.
 - **Latest commits (newest first):**
+  - `b34ebec` M4 CSV import: apps/imports + heuristic mapper + Celery task + wizard
+  - `41b14ce` M4 frontend: contacts + companies + custom-fields settings (CSV import next)
+  - `13a85ce` M4 backend: apps/companies + apps/contacts + apps/custom_fields + filter DSL
+  - `36884a9` Update MEMORY.md to reflect M3 complete + M4 ready to start
   - `b4fdaa7` M3: AppShell + cmd-K palette + keyboard primitives + settings page (TC-6 + TC-9 closure)
   - `96ff3fd` Update MEMORY.md to reflect M2 complete + M3 ready to start
   - `5ee2c33` M2 frontend: auth-utils real impl + login/signup/onboarding/accept-invite + workspace shell
@@ -18,12 +22,13 @@
   - `0090063` Add CLAUDE.md and MEMORY.md for durable repo-level context
   - `5375384` Scaffold Offside CRM monorepo with planning docs and shared packages
 - **Milestone status:**
-  - **M0 — complete.** Repo skeleton resolves end-to-end: `pnpm install` resolves all workspaces, `pnpm dev` runs all four web apps (3000/3001/3002/3003), `pnpm backend:up` boots Django + Postgres + Redis + Celery worker + Beat via docker-compose, `pnpm ios:gen` generates a buildable Xcode project, GitHub Actions CI runs on push + PR.
-  - **M1 — complete.** `apps/users` ships a custom email-based User with hand-authored 0001_initial migration; allauth + dj-rest-auth + SimpleJWT wired in JWT mode at `/api/auth/*`; `/api/schema/` serves OpenAPI publicly so `pnpm codegen:openapi` produces a typed `schema.ts`; Celery `ping` task imports + runs; pytest covers signup → login → /api/auth/user/ + Celery + schema. Production settings tighten JWT cookies to secure + force ACCOUNT_DEFAULT_HTTP_PROTOCOL=https.
-  - **M2 — complete.** `apps/workspaces` ships Workspace + Membership + Role + Invitation with role-based permission classes + WorkspaceJWTAuthentication that resolves the active workspace from the X-Workspace-Id header. Invite flow via Resend magic-link is end-to-end. Frontend ships login + signup + onboarding + accept-invite/[token] + protected `/[workspace]/` route group; data layer is TanStack Query v5.
-  - **M3 — complete.** AppShell wraps the [workspace] route group: collapsible Sidebar (Home live; Contacts/Companies/Deals/Tasks/Automations placeholders show their M-milestone gates), TopBar with workspace switcher + cmd-K-aware search trigger, cmdk-powered CommandPalette overlay (Navigate / Switch workspace / Account groups, brand-tan selected state). useKeyboardShortcut hook handles Cmd-K toggle, "/" open, Esc close — input-aware. Settings page closes M2 deferrals: TC-6 (admin promotes role via PATCH /api/memberships/<id>/) and TC-9 (owner archives workspace via POST /api/workspaces/<id>/archive/, slug-confirmation + 30-day retention notice). Six new backend tests: admin can promote, non-admin 403, can't demote owner, owner archives, admin can't archive, archive must match active workspace.
-  - **M4 — pending (next).** Contacts + Companies + Custom fields + CSV import. Maps to TC-10..TC-14, TC-22..TC-24, TC-58, TC-84.
-  - **M5–M15 — pending.** Per [ROADMAP.md](./ROADMAP.md).
+  - **M0 — complete.** Repo skeleton resolves end-to-end: `pnpm install`, `pnpm dev` (4 web apps), `pnpm backend:up` (Postgres+pgvector + Redis + Django + worker + beat), `pnpm ios:gen` (Xcode project), GitHub Actions CI.
+  - **M1 — complete.** `apps/users` (email-based custom User) + allauth + dj-rest-auth + SimpleJWT at `/api/auth/*` + public OpenAPI schema + real openapi-typescript codegen. Tests: signup → login → /api/auth/user/ + Celery ping smoke + schema-served.
+  - **M2 — complete.** `apps/workspaces` (Workspace + Membership + Role + Invitation) + role-based permissions + WorkspaceJWTAuthentication via X-Workspace-Id header + Resend magic-link invites. Frontend: login + signup + onboarding + accept-invite + protected /[workspace]/ route group with TanStack Query v5.
+  - **M3 — complete.** AppShell + cmd-K palette (cmdk) + useKeyboardShortcut hook (Cmd-K / "/" / Esc, input-aware). Settings page closes TC-6 (admin role promotion) + TC-9 (owner archive). Six new backend tests.
+  - **M4 — complete.** `apps/companies` + `apps/contacts` + `apps/custom_fields` + `apps/imports` ship the records surface. Filter DSL v0 (JSON → Django Q with custom-field JSONB lookups). Frontend: contact + company list/new/detail pages, custom-fields settings (admin), CSV import wizard (upload → mapping review → commit → poll progress) with heuristic header mapper. CustomFieldsPanel renders typed inputs (text/number/select/date/etc) per CustomFieldDef. Hand-authored 0001 migrations for all four apps. Tests: 14 new — contact CRUD + filter DSL + custom field defs + CSV upload + commit + admin-only.
+  - **M5 — pending (next).** Deals + Pipelines + Tasks + Notes + Activities. Maps to TC-15..TC-21.
+  - **M6–M15 — pending.** Per [ROADMAP.md](./ROADMAP.md).
 
 ## Locked decisions (interview Rounds 1–7)
 
@@ -93,22 +98,23 @@ Located at `../radianceskincare-app/saucycart-com-backend-django/`. **Reference 
 
 ## Resume points
 
-M3 is complete. **Next milestone is M4 (contacts + companies + custom fields + CSV import).**
+M4 is complete. **Next milestone is M5 (deals + pipelines + tasks + notes + activities).**
 
-Verify M3 locally first:
-1. `pnpm install` (picks up cmdk). `pnpm backend:up` + `pnpm backend:migrate` + `pnpm backend:test` — the six new workspace tests should pass alongside the existing ones.
-2. `pnpm dev` → log in → land in `/{slug}` with the AppShell (sidebar + top bar). Press `⌘K` (or Ctrl+K, or `/`) — the palette opens. Type a workspace name to switch; type "settings" to navigate.
-3. As an owner, visit `/{slug}/settings` — promote/demote roles in the team list; archive the workspace via the Danger zone (slug-confirmation gate).
+Verify M4 locally first:
+1. `pnpm install` (no new JS deps in CSV import). `pnpm backend:up` + `pnpm backend:migrate` (runs 4 new migrations: contacts/companies/custom_fields/imports) + `pnpm backend:test` (44 backend tests; 14 new from M4).
+2. `pnpm dev` → /{slug}/contacts → "+ New contact" → fill standard + custom fields → save → land on detail page → "Edit" → modify → "Archive". Same for /{slug}/companies. Detail pages show linked records (TC-13).
+3. /{slug}/settings/custom-fields → add a `lead_score` number field on contacts. Re-open a contact to see the field on the form.
+4. /{slug}/contacts/import → upload a CSV with `First Name,Last Name,Email` headers → review heuristic mapping → commit → progress polls every 1.5s → done. Errors show inline.
 
-To start M4 from a cold context:
-1. **Backend** — `apps.contacts`, `apps.companies` Django apps with workspace-scoped models + JSONB `custom` column. Hand-author the 0001 migrations.
-2. **`apps.custom_fields`** — `CustomFieldDef` model + admin CRUD endpoints. Per-workspace, per-entity-type. Types: `text|long_text|number|select|multi_select|date|datetime|boolean|url|email|phone|relation`.
-3. **Filter DSL v0** — JSON-encoded operator grammar `{"and":[{"field":"lead_score","op":">","value":70}]}`. Server-side evaluator that respects `request.workspace_id`.
-4. **Frontend** — `app/[workspace]/contacts/` route (list + detail), virtualized table (consider `@tanstack/react-virtual`), column toggles, basic filters. Same for companies.
-5. **CSV import workflow** — runs as a Celery task; AI-suggested column mapping (real Claude integration lands M11; for M4 use a simple heuristic mapper).
-6. **Tests** — TC-10..TC-14 (contact CRUD + bulk edit + nav), TC-22..TC-24 (custom fields), TC-58 (1k-row CSV import), TC-84 (empty state CTA to import).
+To start M5 from a cold context:
+1. **`apps.deals`** — Deal + Pipeline + Stage models. Pipeline holds an ordered JSONB stages array. Deal has FK pipeline + FK contact + FK company + value_cents + currency + expected_close.
+2. **`apps.tasks`** — Task with polymorphic `(related_type, related_id)` (small enum + ID, NOT GenericForeignKey). Status, priority, due_at, owner FK.
+3. **`apps.notes`** — Markdown body with 24h edit window; audit row created on edits beyond that.
+4. **`apps.activities`** — append-only event log. Signal hooks on Contact/Company/Deal/Task save fire activity rows. Polymorphic `(related_type, related_id)`.
+5. **Frontend** — kanban view (DnD-kit) for /{slug}/deals; deal/task/note detail pages; real activity feed on every record (replacing M4's "Coming in M5" stub).
+6. **Tests** — TC-15..TC-21.
 
-Open `§14.1` items still defer-able. The first ones that bite during later milestones: M5 polymorphic relations (low risk), M6 APNs key.
+Open `§14.1` items still defer-able. M6 (iOS) needs APNs key; M11 (AI) needs token budget config.
 
 ## Revision log
 
@@ -123,7 +129,13 @@ Open `§14.1` items still defer-able. The first ones that bite during later mile
 - **2026-05** — `5ee2c33` completed M2 frontend: `@offside/auth-utils` real implementation, `frontend-web/lib/api.ts` (TanStack Query v5 hooks), `lib/contexts.tsx`, `app/providers.tsx`, pages for /login, /signup, /onboarding, /accept-invite/[token], /[workspace]/{layout,page}, and a WorkspaceSwitcher. Path-segment routing locked. M2 done — TC-6/7/9 deferred to M3.
 - **2026-05** — `96ff3fd` updated MEMORY.md to mark M2 complete + add M3 cold-context guide.
 - **2026-05** — pushed all commits through `96ff3fd` to `origin/main` (10 commits backed up).
-- **2026-05** — `b4fdaa7` completed M3: AppShell (Sidebar with M-milestone-gated nav + TopBar with platform-correct ⌘K hint) wraps the workspace route group, cmdk-powered CommandPalette with brand styling, useKeyboardShortcut hook handles Cmd-K / "/" / Esc with input-aware filtering. Settings page closes M2 deferrals (TC-6 role PATCH + TC-9 owner archive) backed by six new backend tests. cmdk@^1.0.4 added.
+- **2026-05** — `b4fdaa7` completed M3: AppShell (Sidebar + TopBar with ⌘K hint) wraps the workspace route group, cmdk-powered CommandPalette with brand styling, useKeyboardShortcut hook (Cmd-K / "/" / Esc, input-aware). Settings page closes M2 deferrals (TC-6 role PATCH + TC-9 owner archive) with six new backend tests. cmdk@^1.0.4 added.
+- **2026-05** — `36884a9` updated MEMORY.md to mark M3 complete + add M4 cold-context guide.
+- **2026-05** — pushed M3 + MEMORY to `origin/main`.
+- **2026-05** — `13a85ce` completed M4 backend: apps/companies + apps/contacts + apps/custom_fields with workspace-scoped models, JSONB custom columns, hand-authored 0001 migrations, IsWorkspaceManager gating writes, filter DSL v0 (JSON → Django Q with custom-field path resolution), 14 new tests covering CRUD + filter DSL + custom field defs + isolation.
+- **2026-05** — `41b14ce` completed M4 frontend (excl. CSV import): TanStack Query hooks for contacts/companies/custom-field-defs, list + new + detail pages for both records, CustomFieldsPanel rendering typed inputs (text/number/select/date/etc) per CustomFieldDef, /[workspace]/settings/custom-fields/ admin UI. Sidebar Contacts + Companies links flipped from comingSoon placeholders to live routes. CommandPalette gains Contacts / Companies / Custom fields under Navigate.
+- **2026-05** — pushed M4 backend + frontend to `origin/main`.
+- **2026-05** — `b34ebec` completed M4 (last piece): apps/imports with ImportRun model (workspace + entity_type + raw_content + mapping + status counts + errors[]), heuristic header→field mapper, Celery task that streams CSV row-by-row, multipart /upload + /commit endpoints, ImportWizard component (upload → mapping review → progress polling at 1.5s) routed at /[workspace]/{contacts,companies}/import/. authFetch grew FormData support. 7 new backend tests. M4 done.
 
 ---
 
