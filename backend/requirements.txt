@@ -1,0 +1,44 @@
+# Production deps — pinned. Update via pip-compile or a manual bump.
+
+# --- Core Django ---
+Django==4.2.17
+djangorestframework==3.15.2
+django-cors-headers==4.6.0
+django-environ==0.11.2
+dj-database-url==2.3.0
+whitenoise==6.8.2
+
+# --- Auth ---
+django-allauth==65.3.1
+dj-rest-auth==7.0.1
+djangorestframework-simplejwt==5.3.1
+
+# --- API schema ---
+drf-spectacular==0.28.0
+
+# --- Database ---
+psycopg[binary]==3.2.3
+pgvector==0.3.6
+
+# --- Async / workflow runtime ---
+celery==5.4.0
+redis==5.2.1
+django-celery-beat==2.7.0
+django-celery-results==2.5.1
+
+# --- Web server ---
+gunicorn==23.0.0
+
+# --- Storage ---
+django-storages[boto3]==1.14.4
+boto3==1.35.92
+
+# --- AI ---
+anthropic==0.42.0
+openai==1.59.3
+
+# --- Observability ---
+sentry-sdk==2.19.2
+
+# --- Tooling ---
+django-extensions==3.2.3

@@ -1,0 +1,54 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [
+    "migrations",
+    "staticfiles",
+    "mediafiles",
+]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",      # pycodestyle
+    "F",           # pyflakes
+    "I",           # isort
+    "B",           # flake8-bugbear
+    "UP",          # pyupgrade
+    "C4",          # flake8-comprehensions
+    "DJ",          # flake8-django
+    "S",           # flake8-bandit (security)
+    "N",           # pep8-naming
+    "RUF",         # ruff-specific
+]
+ignore = [
+    "E501",        # line-too-long — handled by formatter
+    "S101",        # assert (used in tests)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S", "N"]
+"**/migrations/**" = ["E", "F", "RUF"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+ignore_missing_imports = true
+exclude = ["migrations", "staticfiles"]
+
+[tool.django-stubs]
+django_settings_module = "offside_crm.settings.dev"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "offside_crm.settings.dev"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts = "-ra --strict-markers --tb=short"
+testpaths = ["apps", "tests"]

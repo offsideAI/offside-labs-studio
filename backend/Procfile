@@ -1,0 +1,4 @@
+web: gunicorn offside_crm.wsgi --bind 0.0.0.0:$PORT --workers 3 --timeout 120 --preload --log-file -
+worker: celery -A offside_crm worker -l info --concurrency 2
+beat: celery -A offside_crm beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+release: python manage.py migrate --noinput

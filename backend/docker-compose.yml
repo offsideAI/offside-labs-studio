@@ -1,0 +1,82 @@
+# Local dev stack: postgres (with pgvector) + redis + django web + celery worker + celery beat.
+# `pnpm backend:up` from the repo root runs this.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: offside_crm
+      POSTGRES_USER: offside
+      POSTGRES_PASSWORD: dev_only_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U offside -d offside_crm"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      DJANGO_SETTINGS_MODULE: offside_crm.settings.dev
+      DJANGO_SECRET_KEY: dev-only-replace-me
+      DEBUG: "True"
+      DATABASE_URL: postgres://offside:dev_only_password@postgres:5432/offside_crm
+      REDIS_URL: redis://redis:6379/0
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build: .
+    command: celery -A offside_crm worker -l info
+    environment:
+      DJANGO_SETTINGS_MODULE: offside_crm.settings.dev
+      DJANGO_SECRET_KEY: dev-only-replace-me
+      DATABASE_URL: postgres://offside:dev_only_password@postgres:5432/offside_crm
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  beat:
+    build: .
+    command: celery -A offside_crm beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    environment:
+      DJANGO_SETTINGS_MODULE: offside_crm.settings.dev
+      DJANGO_SECRET_KEY: dev-only-replace-me
+      DATABASE_URL: postgres://offside:dev_only_password@postgres:5432/offside_crm
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
