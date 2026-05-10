@@ -53,8 +53,9 @@ LOCAL_APPS = [
     "apps.contacts",
     "apps.custom_fields",
     "apps.imports",
+    "apps.deals",
     "apps.health",
-    # M5+ adds: apps.deals, apps.tasks, apps.notes, apps.activities, apps.pipelines,
+    # M5+ adds: apps.tasks, apps.notes, apps.activities,
     # apps.integrations, apps.automations, apps.agents, apps.ai
 ]
 
