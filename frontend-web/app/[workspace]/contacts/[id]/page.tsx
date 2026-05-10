@@ -13,7 +13,10 @@ import {
   useUpdateContact,
 } from "../../../../lib/api";
 import { useActiveWorkspace } from "../../../../lib/contexts";
+import { ActivityFeed } from "../../../../components/activity-feed";
 import { CustomFieldsPanel } from "../../../../components/custom-fields-panel";
+import { NotesTab } from "../../../../components/notes-tab";
+import { TasksTab } from "../../../../components/tasks-tab";
 
 const STAGE_OPTIONS = ["", "lead", "qualified", "customer", "churned"];
 
@@ -165,14 +168,31 @@ const ContactDetail = ({
 
       <Card>
         <CardHeader>
-          <Eyebrow>Activity</Eyebrow>
-          <h2 className="text-xl font-styrene font-bold">Coming in M5.</h2>
+          <Eyebrow>Tasks</Eyebrow>
+          <h2 className="text-xl font-styrene font-bold">Things to do.</h2>
         </CardHeader>
         <CardContent>
-          <p className="text-fg-muted">
-            Append-only activity feed (emails / calls / meetings / AI actions / automation runs)
-            ships with the deals + tasks milestone.
-          </p>
+          <TasksTab relatedType="contact" relatedId={c.id} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <Eyebrow>Notes</Eyebrow>
+          <h2 className="text-xl font-styrene font-bold">What you&rsquo;re thinking.</h2>
+        </CardHeader>
+        <CardContent>
+          <NotesTab relatedType="contact" relatedId={c.id} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <Eyebrow>Activity</Eyebrow>
+          <h2 className="text-xl font-styrene font-bold">Recent.</h2>
+        </CardHeader>
+        <CardContent>
+          <ActivityFeed relatedType="contact" relatedId={c.id} />
         </CardContent>
       </Card>
 

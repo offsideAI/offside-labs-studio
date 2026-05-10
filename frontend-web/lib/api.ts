@@ -597,4 +597,314 @@ export const useImportRun = (
     refetchInterval: poll ? 1500 : false,
   });
 
+// --- M5: Pipelines, Deals, Tasks, Notes, Activities ---
+
+export interface PipelineStage {
+  id: string;
+  label: string;
+  order: number;
+}
+
+export interface Pipeline {
+  id: number;
+  name: string;
+  stages: PipelineStage[];
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Deal {
+  id: number;
+  name: string;
+  pipeline: number;
+  stage_id: string;
+  value_cents: number;
+  currency: string;
+  expected_close: string | null;
+  contact: number | null;
+  company: number | null;
+  owner: number | null;
+  custom: Record<string, unknown>;
+  tags: string[];
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export type RelatedType = "contact" | "company" | "deal" | "task" | "note";
+export type TaskStatus = "open" | "in_progress" | "done" | "cancelled";
+export type TaskPriority = "low" | "medium" | "high";
+
+export interface Task {
+  id: number;
+  title: string;
+  description: string;
+  due_at: string | null;
+  related_type: RelatedType;
+  related_id: number;
+  status: TaskStatus;
+  priority: TaskPriority;
+  owner: number | null;
+  custom: Record<string, unknown>;
+  completed_at: string | null;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface Note {
+  id: number;
+  body_md: string;
+  related_type: RelatedType;
+  related_id: number;
+  author: number;
+  edit_log: Array<{ edited_at: string; edited_by: number; previous_body_preview: string }>;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export type ActivityKind =
+  | "record_created"
+  | "record_updated"
+  | "field_changed"
+  | "note_added"
+  | "task_created"
+  | "task_completed"
+  | "deal_stage_changed"
+  | "email_sent"
+  | "email_received"
+  | "ai_action"
+  | "automation_run";
+
+export interface Activity {
+  id: number;
+  kind: ActivityKind;
+  actor_kind: string;
+  actor_user: number | null;
+  actor_email: string | null;
+  related_type: RelatedType;
+  related_id: number;
+  payload: Record<string, unknown>;
+  occurred_at: string;
+}
+
+// --- Pipelines ---
+
+export const usePipelines = (workspaceId: number | null | undefined) =>
+  useQuery({
+    queryKey: ["pipelines", workspaceId],
+    queryFn: () =>
+      fetcher.authFetch<Paginated<Pipeline>>("/api/pipelines/", {
+        workspaceId: workspaceId ?? undefined,
+      }),
+    enabled: Boolean(workspaceId) && apiTokens.hasSession(),
+  });
+
+export const useCreatePipeline = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { name: string; stages?: PipelineStage[] }) =>
+      fetcher.authFetch<Pipeline>("/api/pipelines/", {
+        method: "POST",
+        body: input,
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["pipelines", workspaceId] }),
+  });
+};
+
+// --- Deals ---
+
+export const useDeals = (
+  workspaceId: number | null | undefined,
+  filter?: Record<string, unknown>,
+) =>
+  useQuery({
+    queryKey: ["deals", workspaceId, filter],
+    queryFn: () => {
+      const url = filter
+        ? `/api/deals/?filter=${encodeURIComponent(JSON.stringify(filter))}`
+        : "/api/deals/";
+      return fetcher.authFetch<Paginated<Deal>>(url, {
+        workspaceId: workspaceId ?? undefined,
+      });
+    },
+    enabled: Boolean(workspaceId) && apiTokens.hasSession(),
+  });
+
+export const useDeal = (workspaceId: number | null | undefined, dealId: number | string) =>
+  useQuery({
+    queryKey: ["deal", workspaceId, String(dealId)],
+    queryFn: () =>
+      fetcher.authFetch<Deal>(`/api/deals/${dealId}/`, {
+        workspaceId: workspaceId ?? undefined,
+      }),
+    enabled: Boolean(workspaceId && dealId) && apiTokens.hasSession(),
+  });
+
+export const useCreateDeal = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Partial<Deal>) =>
+      fetcher.authFetch<Deal>("/api/deals/", {
+        method: "POST",
+        body: input,
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["deals", workspaceId] }),
+  });
+};
+
+export const useUpdateDeal = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: number | string; patch: Partial<Deal> }) =>
+      fetcher.authFetch<Deal>(`/api/deals/${input.id}/`, {
+        method: "PATCH",
+        body: input.patch,
+        workspaceId: workspaceId ?? undefined,
+      }),
+    // Optimistic update for kanban drag-drop responsiveness.
+    onMutate: async (input) => {
+      await qc.cancelQueries({ queryKey: ["deals", workspaceId] });
+      const previous = qc.getQueriesData<Paginated<Deal>>({ queryKey: ["deals", workspaceId] });
+      qc.setQueriesData<Paginated<Deal>>(
+        { queryKey: ["deals", workspaceId] },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            results: old.results.map((d) =>
+              d.id === Number(input.id) ? { ...d, ...input.patch } : d,
+            ),
+          };
+        },
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      context?.previous.forEach(([key, value]) => qc.setQueryData(key, value));
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["deals", workspaceId] }),
+  });
+};
+
+export const useDeleteDeal = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number | string) =>
+      fetcher.authFetch<unknown>(`/api/deals/${id}/`, {
+        method: "DELETE",
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["deals", workspaceId] }),
+  });
+};
+
+// --- Tasks ---
+
+export const useTasksFor = (
+  workspaceId: number | null | undefined,
+  relatedType: RelatedType | null | undefined,
+  relatedId: number | string | null | undefined,
+) =>
+  useQuery({
+    queryKey: ["tasks", workspaceId, relatedType, String(relatedId)],
+    queryFn: () =>
+      fetcher.authFetch<Paginated<Task>>(
+        `/api/tasks/?related_type=${relatedType}&related_id=${relatedId}`,
+        { workspaceId: workspaceId ?? undefined },
+      ),
+    enabled:
+      Boolean(workspaceId && relatedType && relatedId) && apiTokens.hasSession(),
+  });
+
+export const useCreateTask = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Partial<Task>) =>
+      fetcher.authFetch<Task>("/api/tasks/", {
+        method: "POST",
+        body: input,
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: (task) =>
+      qc.invalidateQueries({
+        queryKey: ["tasks", workspaceId, task.related_type, String(task.related_id)],
+      }),
+  });
+};
+
+export const useUpdateTask = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: number; patch: Partial<Task> }) =>
+      fetcher.authFetch<Task>(`/api/tasks/${input.id}/`, {
+        method: "PATCH",
+        body: input.patch,
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: (task) =>
+      qc.invalidateQueries({
+        queryKey: ["tasks", workspaceId, task.related_type, String(task.related_id)],
+      }),
+  });
+};
+
+// --- Notes ---
+
+export const useNotesFor = (
+  workspaceId: number | null | undefined,
+  relatedType: RelatedType | null | undefined,
+  relatedId: number | string | null | undefined,
+) =>
+  useQuery({
+    queryKey: ["notes", workspaceId, relatedType, String(relatedId)],
+    queryFn: () =>
+      fetcher.authFetch<Paginated<Note>>(
+        `/api/notes/?related_type=${relatedType}&related_id=${relatedId}`,
+        { workspaceId: workspaceId ?? undefined },
+      ),
+    enabled:
+      Boolean(workspaceId && relatedType && relatedId) && apiTokens.hasSession(),
+  });
+
+export const useCreateNote = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { body_md: string; related_type: RelatedType; related_id: number }) =>
+      fetcher.authFetch<Note>("/api/notes/", {
+        method: "POST",
+        body: input,
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: (note) =>
+      qc.invalidateQueries({
+        queryKey: ["notes", workspaceId, note.related_type, String(note.related_id)],
+      }),
+  });
+};
+
+// --- Activities ---
+
+export const useActivitiesFor = (
+  workspaceId: number | null | undefined,
+  relatedType: RelatedType | null | undefined,
+  relatedId: number | string | null | undefined,
+) =>
+  useQuery({
+    queryKey: ["activities", workspaceId, relatedType, String(relatedId)],
+    queryFn: () =>
+      fetcher.authFetch<Paginated<Activity>>(
+        `/api/activities/?related_type=${relatedType}&related_id=${relatedId}`,
+        { workspaceId: workspaceId ?? undefined },
+      ),
+    enabled:
+      Boolean(workspaceId && relatedType && relatedId) && apiTokens.hasSession(),
+  });
+
 export { AuthFetchError };

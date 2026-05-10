@@ -33,15 +33,13 @@ const NAV: NavItem[] = [
     label: "Deals",
     href: (slug) => `/${slug}/deals`,
     match: (pathname, slug) => pathname.startsWith(`/${slug}/deals`),
-    comingSoon: true,
-    badge: "M5",
   },
   {
     label: "Tasks",
     href: (slug) => `/${slug}/tasks`,
     match: (pathname, slug) => pathname.startsWith(`/${slug}/tasks`),
     comingSoon: true,
-    badge: "M5",
+    badge: "M5+",
   },
   {
     label: "Automations",

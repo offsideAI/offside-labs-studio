@@ -12,7 +12,10 @@ import {
   useUpdateCompany,
 } from "../../../../lib/api";
 import { useActiveWorkspace } from "../../../../lib/contexts";
+import { ActivityFeed } from "../../../../components/activity-feed";
 import { CustomFieldsPanel } from "../../../../components/custom-fields-panel";
+import { NotesTab } from "../../../../components/notes-tab";
+import { TasksTab } from "../../../../components/tasks-tab";
 
 const SIZE_BANDS = ["", "1-10", "11-50", "51-200", "201-1000", "1000+"];
 
@@ -231,6 +234,36 @@ const CompanyDetail = ({
               ))}
             </ul>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <Eyebrow>Tasks</Eyebrow>
+          <h2 className="text-xl font-styrene font-bold">Things to do.</h2>
+        </CardHeader>
+        <CardContent>
+          <TasksTab relatedType="company" relatedId={c.id} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <Eyebrow>Notes</Eyebrow>
+          <h2 className="text-xl font-styrene font-bold">What you&rsquo;re thinking.</h2>
+        </CardHeader>
+        <CardContent>
+          <NotesTab relatedType="company" relatedId={c.id} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <Eyebrow>Activity</Eyebrow>
+          <h2 className="text-xl font-styrene font-bold">Recent.</h2>
+        </CardHeader>
+        <CardContent>
+          <ActivityFeed relatedType="company" relatedId={c.id} />
         </CardContent>
       </Card>
 
