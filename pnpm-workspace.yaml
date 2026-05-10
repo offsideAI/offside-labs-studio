@@ -1,0 +1,6 @@
+packages:
+  - "frontend-web"
+  - "crunch-web"
+  - "design-web"
+  - "director-web"
+  - "packages/*"

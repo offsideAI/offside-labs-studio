@@ -1,0 +1,84 @@
+# ---- Node / pnpm ----
+node_modules/
+.pnpm-debug.log
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---- Next.js ----
+.next/
+.vercel/
+out/
+
+# ---- Turbo ----
+.turbo/
+
+# ---- Build outputs ----
+dist/
+build/
+*.tsbuildinfo
+
+# ---- Env ----
+.env
+.env.local
+.env.*.local
+!.env.sample
+!.env.example
+
+# ---- Python / Django ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+mediafiles/
+celerybeat-schedule
+celerybeat.pid
+
+# ---- Xcode / iOS ----
+frontend-ios/*.xcodeproj/
+frontend-ios/*.xcworkspace/
+frontend-ios/Generated/
+xcuserdata/
+DerivedData/
+*.xcuserstate
+*.xcscmblueprint
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+build/
+Pods/
+*.lock
+!Package.resolved
+
+# ---- IDE / editor ----
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+.DS_Store
+
+# ---- OpenAPI codegen artifacts (generated) ----
+packages/api-client/src/generated/
+frontend-ios/Generated/
+
+# ---- Logs / temp ----
+*.log
+.tmp/
+tmp/
