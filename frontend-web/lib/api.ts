@@ -517,4 +517,84 @@ export const useDeleteCustomFieldDef = (workspaceId: number | null | undefined) 
   });
 };
 
+// --- CSV imports ---
+
+export type ImportEntityType = "contact" | "company";
+export type ImportStatus = "pending" | "running" | "complete" | "failed";
+
+export interface ImportRun {
+  id: number;
+  entity_type: ImportEntityType;
+  file_name: string;
+  mapping: Record<string, string>;
+  status: ImportStatus;
+  total_rows: number;
+  processed_rows: number;
+  error_rows: number;
+  errors: Array<{ row: number | null; message: string }>;
+  headers: string[];
+  sample_rows: string[][];
+  progress_pct: number;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+}
+
+export const useUploadImportCSV = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { file: File; entityType: ImportEntityType }) => {
+      const fd = new FormData();
+      fd.append("entity_type", input.entityType);
+      fd.append("file", input.file);
+      return fetcher.authFetch<ImportRun>("/api/imports/upload/", {
+        method: "POST",
+        body: fd,
+        workspaceId: workspaceId ?? undefined,
+      });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["imports", workspaceId] }),
+  });
+};
+
+export const useUpdateImportMapping = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: number; mapping: Record<string, string> }) =>
+      fetcher.authFetch<ImportRun>(`/api/imports/${input.id}/`, {
+        method: "PATCH",
+        body: { mapping: input.mapping },
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: (run) => qc.setQueryData<ImportRun>(["import-run", workspaceId, run.id], run),
+  });
+};
+
+export const useCommitImport = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      fetcher.authFetch<ImportRun>(`/api/imports/${id}/commit/`, {
+        method: "POST",
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: (run) => qc.setQueryData<ImportRun>(["import-run", workspaceId, run.id], run),
+  });
+};
+
+export const useImportRun = (
+  workspaceId: number | null | undefined,
+  importId: number | null | undefined,
+  poll = false,
+) =>
+  useQuery({
+    queryKey: ["import-run", workspaceId, importId],
+    queryFn: () =>
+      fetcher.authFetch<ImportRun>(`/api/imports/${importId}/`, {
+        workspaceId: workspaceId ?? undefined,
+      }),
+    enabled: Boolean(workspaceId && importId) && apiTokens.hasSession(),
+    refetchInterval: poll ? 1500 : false,
+  });
+
 export { AuthFetchError };

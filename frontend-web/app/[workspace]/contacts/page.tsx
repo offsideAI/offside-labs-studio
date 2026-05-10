@@ -39,12 +39,20 @@ const ContactsList = ({
             Contacts<span className="tan-period">.</span>
           </h1>
         </div>
-        <Link
-          href={`/${workspaceSlug}/contacts/new`}
-          className="inline-flex h-10 items-center rounded-sm border border-ink bg-ink px-4 text-sm font-bold text-bone hover:bg-ink-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan focus-visible:ring-offset-2"
-        >
-          + New contact
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href={`/${workspaceSlug}/contacts/import`}
+            className="inline-flex h-10 items-center rounded-sm border hairline bg-bone px-4 text-sm font-medium hover:bg-tan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan focus-visible:ring-offset-2"
+          >
+            Import CSV
+          </Link>
+          <Link
+            href={`/${workspaceSlug}/contacts/new`}
+            className="inline-flex h-10 items-center rounded-sm border border-ink bg-ink px-4 text-sm font-bold text-bone hover:bg-ink-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan focus-visible:ring-offset-2"
+          >
+            + New contact
+          </Link>
+        </div>
       </header>
 
       <Hairline />
@@ -131,9 +139,15 @@ const EmptyState = ({ workspaceSlug }: { workspaceSlug: string }) => (
     <Eyebrow>No contacts yet</Eyebrow>
     <h2 className="mt-2 text-2xl font-styrene font-bold">Bring your team into Offside.</h2>
     <p className="mt-3 text-fg-muted">
-      Create one by hand, or import from CSV / HubSpot / Pipedrive (CSV import lands next).
+      Create one by hand or import from a CSV. HubSpot / Pipedrive importers land in M11+.
     </p>
     <div className="mt-6 flex justify-center gap-3">
+      <Link
+        href={`/${workspaceSlug}/contacts/import`}
+        className="inline-flex h-10 items-center rounded-sm border hairline bg-bone px-4 text-sm font-medium hover:bg-tan-100"
+      >
+        Import CSV
+      </Link>
       <Link
         href={`/${workspaceSlug}/contacts/new`}
         className="inline-flex h-10 items-center rounded-sm border border-ink bg-ink px-4 text-sm font-bold text-bone hover:bg-ink-700"

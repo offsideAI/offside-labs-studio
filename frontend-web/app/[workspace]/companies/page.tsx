@@ -30,12 +30,20 @@ const CompaniesList = ({
             Companies<span className="tan-period">.</span>
           </h1>
         </div>
-        <Link
-          href={`/${workspaceSlug}/companies/new`}
-          className="inline-flex h-10 items-center rounded-sm border border-ink bg-ink px-4 text-sm font-bold text-bone hover:bg-ink-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan focus-visible:ring-offset-2"
-        >
-          + New company
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href={`/${workspaceSlug}/companies/import`}
+            className="inline-flex h-10 items-center rounded-sm border hairline bg-bone px-4 text-sm font-medium hover:bg-tan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan focus-visible:ring-offset-2"
+          >
+            Import CSV
+          </Link>
+          <Link
+            href={`/${workspaceSlug}/companies/new`}
+            className="inline-flex h-10 items-center rounded-sm border border-ink bg-ink px-4 text-sm font-bold text-bone hover:bg-ink-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan focus-visible:ring-offset-2"
+          >
+            + New company
+          </Link>
+        </div>
       </header>
 
       <Hairline />

@@ -13,7 +13,10 @@ export const createAuthFetch = (config: AuthFetchConfig) => {
 
   const performRequest = async (path: string, opts: AuthFetchOptions): Promise<Response> => {
     const headers = new Headers(opts.headers);
-    if (!headers.has("Content-Type") && opts.body !== undefined) {
+    const isFormData =
+      typeof FormData !== "undefined" && opts.body instanceof FormData;
+    // FormData carries its own Content-Type with boundary; never override it.
+    if (!headers.has("Content-Type") && opts.body !== undefined && !isFormData) {
       headers.set("Content-Type", "application/json");
     }
     const tokens = config.store.get();
@@ -29,9 +32,11 @@ export const createAuthFetch = (config: AuthFetchConfig) => {
       body:
         opts.body === undefined
           ? undefined
-          : typeof opts.body === "string"
-            ? opts.body
-            : JSON.stringify(opts.body),
+          : isFormData
+            ? (opts.body as FormData)
+            : typeof opts.body === "string"
+              ? opts.body
+              : JSON.stringify(opts.body),
     };
     return fetch(`${config.baseUrl}${path}`, init);
   };
