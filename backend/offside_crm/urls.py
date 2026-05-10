@@ -19,8 +19,11 @@ urlpatterns = [
     path("api/", include("apps.contacts.urls")),
     path("api/", include("apps.custom_fields.urls")),
     path("api/", include("apps.imports.urls")),
-    # Pipelines + deals (M5).
+    # Pipelines + deals + tasks + notes + activities (M5).
     path("api/", include("apps.deals.urls")),
+    path("api/", include("apps.tasks.urls")),
+    path("api/", include("apps.notes.urls")),
+    path("api/", include("apps.activities.urls")),
     # OpenAPI schema + Swagger UI. SCHEMA is publicly servable (SERVE_PERMISSIONS in
     # SPECTACULAR_SETTINGS) so codegen works without auth.
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
