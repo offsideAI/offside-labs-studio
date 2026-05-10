@@ -49,9 +49,11 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     "apps.users",
     "apps.workspaces",
+    "apps.companies",
+    "apps.contacts",
+    "apps.custom_fields",
     "apps.health",
-    # M3+ adds: apps.contacts, apps.companies,
-    # apps.deals, apps.tasks, apps.notes, apps.activities, apps.pipelines,
+    # M5+ adds: apps.deals, apps.tasks, apps.notes, apps.activities, apps.pipelines,
     # apps.integrations, apps.automations, apps.agents, apps.ai
 ]
 

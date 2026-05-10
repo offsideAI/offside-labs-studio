@@ -14,6 +14,10 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     # Workspaces / memberships / invitations (M2).
     path("api/", include("apps.workspaces.urls")),
+    # Records (M4) — contacts / companies / custom-field defs.
+    path("api/", include("apps.companies.urls")),
+    path("api/", include("apps.contacts.urls")),
+    path("api/", include("apps.custom_fields.urls")),
     # OpenAPI schema + Swagger UI. SCHEMA is publicly servable (SERVE_PERMISSIONS in
     # SPECTACULAR_SETTINGS) so codegen works without auth.
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
