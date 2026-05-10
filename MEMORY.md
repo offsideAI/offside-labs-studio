@@ -4,16 +4,19 @@
 
 ## Current state (2026-05)
 
-- **Branch:** `main`. Local is **4 commits ahead of `origin/main`** — not yet pushed.
+- **Branch:** `main`. Local is **6 commits ahead of `origin/main`** — not yet pushed.
 - **Latest commits (newest first):**
+  - `4ed442e` M1: backend foundation — apps/users + auth wiring + real OpenAPI codegen
+  - `268922c` Update MEMORY.md to reflect M0 complete + M1 ready to start
   - `d48c5ed` Complete M0 scaffold: backend (Django + Celery + DO Procfile) + iOS (xcodegen + SwiftUI) + CI
   - `dd2a003` Scaffold M0 phase 2a — web surface (frontend-web + three suite placeholders)
   - `0090063` Add CLAUDE.md and MEMORY.md for durable repo-level context
   - `5375384` Scaffold Offside CRM monorepo with planning docs and shared packages
 - **Milestone status:**
   - **M0 — complete.** Repo skeleton resolves end-to-end: `pnpm install` resolves all workspaces, `pnpm dev` runs all four web apps (3000/3001/3002/3003), `pnpm backend:up` boots Django + Postgres + Redis + Celery worker + Beat via docker-compose, `pnpm ios:gen` generates a buildable Xcode project, GitHub Actions CI runs on push + PR.
-  - **M1 — pending (next).** Backend foundation: allauth + dj-rest-auth + SimpleJWT custom user, drf-spectacular emitting OpenAPI, Celery `ping` smoke task confirmed end-to-end, OpenAPI codegen wired into `pnpm codegen:openapi`.
-  - **M2–M15 — pending.** Per [ROADMAP.md](./ROADMAP.md). Estimated total 83 working days ≈ 5.5–7.5 months calendar.
+  - **M1 — complete.** `apps/users` ships a custom email-based User with hand-authored 0001_initial migration; allauth + dj-rest-auth + SimpleJWT wired in JWT mode at `/api/auth/*`; `/api/schema/` serves OpenAPI publicly so `pnpm codegen:openapi` produces a typed `schema.ts`; Celery `ping` task imports + runs; pytest covers signup → login → /api/auth/user/ + Celery + schema. Production settings tighten JWT cookies to secure + force ACCOUNT_DEFAULT_HTTP_PROTOCOL=https.
+  - **M2 — pending (next).** Workspaces + Membership + Role + invite flow with Resend magic-link; JWT carries `active_workspace_id`; web workspace switcher.
+  - **M3–M15 — pending.** Per [ROADMAP.md](./ROADMAP.md). Estimated total 83 working days ≈ 5.5–7.5 months calendar.
 
 ## Locked decisions (interview Rounds 1–7)
 
@@ -83,18 +86,19 @@ Located at `../radianceskincare-app/saucycart-com-backend-django/`. **Reference 
 
 ## Resume points
 
-M0 is fully scaffolded. **Next milestone is M1 (backend foundation).**
+M1 is complete. **Next milestone is M2 (workspaces + multi-tenancy + invite flow).**
 
-To start M1 from a cold context:
-1. `cd backend/ && pip install -r requirements.txt -r requirements-dev.txt` — install Python deps locally if not using docker.
-2. **Add `apps.users`** Django app (custom email-based User extending `AbstractUser`); add to `LOCAL_APPS` in `settings/base.py`; uncomment `AUTH_USER_MODEL = "users.User"`.
-3. **Wire allauth + dj-rest-auth registration/login URLs** under `/api/auth/` in `offside_crm/urls.py`.
-4. **Configure Resend SMTP** for email verification + password reset templates.
-5. **Replace the `tools/openapi/codegen.mjs` placeholder** with real `openapi-typescript` invocation pointing at `http://localhost:8000/api/schema/`.
-6. **First test:** `POST /api/auth/registration/` returns 201, follow-up `POST /api/auth/login/` returns JWT pair, `GET /api/auth/user/` with bearer returns the user.
-7. **Celery smoke test:** `from offside_crm.celery import ping; ping.delay()` from a Django shell returns a task id; worker logs the result.
+Verify M1 locally first: `pnpm backend:up`, then in another shell `pnpm backend:migrate && pnpm backend:test` (signup → login → /api/auth/user/ + Celery ping pass), then `pnpm codegen:openapi` produces a non-empty `packages/api-client/src/generated/schema.ts`.
 
-Open `§14.1` items remain defer-able. The first ones that bite during M1 are: APNs key (defer to M6), DO App Platform spec (defer to first deploy).
+To start M2 from a cold context:
+1. **Create `apps.workspaces`** with `Workspace`, `Membership`, `Role` enum (`owner|admin|manager|rep|read_only`), `Invitation` (single-use token + expiry). Add `apps.workspaces` to `LOCAL_APPS` in `settings/base.py`.
+2. **Add a `WorkspaceScopedMixin`** that defaults querysets to `request.workspace_id` and a DRF permission class checking `Membership.role` against per-view requirements.
+3. **Extend the JWT** with a custom `active_workspace_id` claim. `POST /api/workspaces/switch/` rotates the token to a new active workspace.
+4. **Invitation flow** — `POST /api/workspaces/<id>/invites/` issues a token and sends a Resend magic-link; landing on the link calls `POST /api/auth/registration/with-invite/<token>/` which creates the user + the membership atomically.
+5. **Web** — workspace-creation page after first signup; workspace switcher in cmd-K (placeholder until M3 polishes the palette).
+6. **Tests** — TC-5..TC-9 (invite + switch + cross-workspace 403/404).
+
+Open `§14.1` items remain defer-able. None block M2.
 
 ## Revision log
 
@@ -102,6 +106,8 @@ Open `§14.1` items remain defer-able. The first ones that bite during M1 are: A
 - **2026-05** — `0090063` added CLAUDE.md + MEMORY.md (this file) for durable repo-level context.
 - **2026-05** — `dd2a003` scaffolded M0 phase 2a: `frontend-web/` (Next.js 15 + `/brand` token-demo route) and the three suite placeholders (`crunch-web`, `design-web`, `director-web`).
 - **2026-05** — `d48c5ed` completed M0: Django backend (Celery + Procfile + Dockerfile + docker-compose + `apps.health` for liveness/readiness), `frontend-ios/` (xcodegen + SwiftUI placeholder with brand-token parity), GitHub Actions CI workflow. M0 done.
+- **2026-05** — `268922c` updated MEMORY.md to mark M0 complete + add the M1 cold-context pickup guide.
+- **2026-05** — `4ed442e` completed M1: `apps/users` (email-based custom User, hand-authored 0001 migration, UserAdmin, serializers), allauth + dj-rest-auth + SimpleJWT wired at `/api/auth/*`, public OpenAPI schema, real `openapi-typescript` codegen, conftest.py forcing Celery eager + locmem email in tests, signup/login/me + Celery + schema-served pytest coverage, prod settings tightening JWT cookies + ACCOUNT_DEFAULT_HTTP_PROTOCOL=https. M1 done.
 
 ---
 
