@@ -4,8 +4,10 @@
 
 ## Current state (2026-05)
 
-- **Branch:** `main`. Local is **9 commits ahead of `origin/main`** — not yet pushed.
+- **Branch:** `main`. Local is **1 commit ahead of `origin/main`** (M3); everything through `96ff3fd` is on origin.
 - **Latest commits (newest first):**
+  - `b4fdaa7` M3: AppShell + cmd-K palette + keyboard primitives + settings page (TC-6 + TC-9 closure)
+  - `96ff3fd` Update MEMORY.md to reflect M2 complete + M3 ready to start
   - `5ee2c33` M2 frontend: auth-utils real impl + login/signup/onboarding/accept-invite + workspace shell
   - `d9cc5ec` M2 backend: apps/workspaces — Workspace + Membership + Invitation + role-based perms
   - `11b785f` Update MEMORY.md to reflect M1 complete + M2 ready to start
@@ -18,9 +20,10 @@
 - **Milestone status:**
   - **M0 — complete.** Repo skeleton resolves end-to-end: `pnpm install` resolves all workspaces, `pnpm dev` runs all four web apps (3000/3001/3002/3003), `pnpm backend:up` boots Django + Postgres + Redis + Celery worker + Beat via docker-compose, `pnpm ios:gen` generates a buildable Xcode project, GitHub Actions CI runs on push + PR.
   - **M1 — complete.** `apps/users` ships a custom email-based User with hand-authored 0001_initial migration; allauth + dj-rest-auth + SimpleJWT wired in JWT mode at `/api/auth/*`; `/api/schema/` serves OpenAPI publicly so `pnpm codegen:openapi` produces a typed `schema.ts`; Celery `ping` task imports + runs; pytest covers signup → login → /api/auth/user/ + Celery + schema. Production settings tighten JWT cookies to secure + force ACCOUNT_DEFAULT_HTTP_PROTOCOL=https.
-  - **M2 — complete.** `apps/workspaces` ships Workspace + Membership + Role + Invitation with role-based permission classes (IsWorkspaceMember/Owner/Admin/Manager) + WorkspaceJWTAuthentication that resolves the active workspace from the X-Workspace-Id header (NOT a JWT claim — workspace switching is zero-token-rotation). Invite flow via Resend magic-link templates is end-to-end with public + authenticated accept endpoints. Frontend ships login + signup + onboarding + accept-invite/[token] + protected `/[workspace]/` route group with a working WorkspaceSwitcher; data layer is TanStack Query v5; `@offside/auth-utils` has a real authFetch with refresh-on-401 + workspace-header injection. **Deferred to later milestones:** TC-6 (role promotion UI — settings page lands in M3+), TC-7 (cmd-K keyboard switch — full palette is M3), TC-9 (workspace archive UI — settings page).
-  - **M3 — pending (next).** Web shell + cmd-K palette + j/k row nav + slash search + skip link + axe-clean smoke pass on every route. Lands TC-7, TC-75–TC-79.
-  - **M4–M15 — pending.** Per [ROADMAP.md](./ROADMAP.md).
+  - **M2 — complete.** `apps/workspaces` ships Workspace + Membership + Role + Invitation with role-based permission classes + WorkspaceJWTAuthentication that resolves the active workspace from the X-Workspace-Id header. Invite flow via Resend magic-link is end-to-end. Frontend ships login + signup + onboarding + accept-invite/[token] + protected `/[workspace]/` route group; data layer is TanStack Query v5.
+  - **M3 — complete.** AppShell wraps the [workspace] route group: collapsible Sidebar (Home live; Contacts/Companies/Deals/Tasks/Automations placeholders show their M-milestone gates), TopBar with workspace switcher + cmd-K-aware search trigger, cmdk-powered CommandPalette overlay (Navigate / Switch workspace / Account groups, brand-tan selected state). useKeyboardShortcut hook handles Cmd-K toggle, "/" open, Esc close — input-aware. Settings page closes M2 deferrals: TC-6 (admin promotes role via PATCH /api/memberships/<id>/) and TC-9 (owner archives workspace via POST /api/workspaces/<id>/archive/, slug-confirmation + 30-day retention notice). Six new backend tests: admin can promote, non-admin 403, can't demote owner, owner archives, admin can't archive, archive must match active workspace.
+  - **M4 — pending (next).** Contacts + Companies + Custom fields + CSV import. Maps to TC-10..TC-14, TC-22..TC-24, TC-58, TC-84.
+  - **M5–M15 — pending.** Per [ROADMAP.md](./ROADMAP.md).
 
 ## Locked decisions (interview Rounds 1–7)
 
@@ -90,22 +93,22 @@ Located at `../radianceskincare-app/saucycart-com-backend-django/`. **Reference 
 
 ## Resume points
 
-M2 is complete. **Next milestone is M3 (web shell + cmd-K palette + keyboard nav).**
+M3 is complete. **Next milestone is M4 (contacts + companies + custom fields + CSV import).**
 
-Verify M2 locally first:
-1. `pnpm install` (picks up @tanstack/react-query). `pnpm backend:up` + `pnpm backend:migrate` + `pnpm backend:test` (the new workspace tests should pass).
-2. `pnpm dev` (in another shell) → http://localhost:3000/signup → create account → manually flip `EmailAddress.verified=True` in Django shell or set `ACCOUNT_EMAIL_VERIFICATION=optional` → /login → /onboarding → /{slug}.
-3. From the workspace home, invite a teammate; check the worker logs for the Resend send (or set `EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend` in dev to print the magic link).
+Verify M3 locally first:
+1. `pnpm install` (picks up cmdk). `pnpm backend:up` + `pnpm backend:migrate` + `pnpm backend:test` — the six new workspace tests should pass alongside the existing ones.
+2. `pnpm dev` → log in → land in `/{slug}` with the AppShell (sidebar + top bar). Press `⌘K` (or Ctrl+K, or `/`) — the palette opens. Type a workspace name to switch; type "settings" to navigate.
+3. As an owner, visit `/{slug}/settings` — promote/demote roles in the team list; archive the workspace via the Danger zone (slug-confirmation gate).
 
-To start M3 from a cold context:
-1. **App shell** — `frontend-web/components/AppShell.tsx` with a sidebar (collapsible) + top bar + main slot. Replace the ad-hoc header in `app/[workspace]/layout.tsx` with this shell.
-2. **Cmd-K palette skeleton** — install `cmdk` (or build with React); fuzzy-match commands + workspaces. Real record/search hooks land in M12; M3 ships the chassis + workspace switcher + nav-to-page commands.
-3. **Keyboard primitives** — `j/k` row nav (a `useListKeyboardNav` hook), `/` to focus search, `n` to create-new, `esc` to close modals/popovers, focus trap on dialogs.
-4. **Skip link + a11y** — already present in `app/layout.tsx`; verify it's visible on Tab + axe-clean.
-5. **Polish auth pages** — login/signup/onboarding/accept-invite get the new shell-less layout (centered card on bone) consistent with brand.
-6. **Tests** — TC-7, TC-55, TC-75, TC-76, TC-77, TC-78, TC-79 (Playwright if we add it; otherwise manual scripts).
+To start M4 from a cold context:
+1. **Backend** — `apps.contacts`, `apps.companies` Django apps with workspace-scoped models + JSONB `custom` column. Hand-author the 0001 migrations.
+2. **`apps.custom_fields`** — `CustomFieldDef` model + admin CRUD endpoints. Per-workspace, per-entity-type. Types: `text|long_text|number|select|multi_select|date|datetime|boolean|url|email|phone|relation`.
+3. **Filter DSL v0** — JSON-encoded operator grammar `{"and":[{"field":"lead_score","op":">","value":70}]}`. Server-side evaluator that respects `request.workspace_id`.
+4. **Frontend** — `app/[workspace]/contacts/` route (list + detail), virtualized table (consider `@tanstack/react-virtual`), column toggles, basic filters. Same for companies.
+5. **CSV import workflow** — runs as a Celery task; AI-suggested column mapping (real Claude integration lands M11; for M4 use a simple heuristic mapper).
+6. **Tests** — TC-10..TC-14 (contact CRUD + bulk edit + nav), TC-22..TC-24 (custom fields), TC-58 (1k-row CSV import), TC-84 (empty state CTA to import).
 
-Open `§14.1` items still defer-able. The first ones that bite during M3 are: full logo wordmark SVG (currently using OA monogram favicon only), per-product hue confirmation (only matters if Crunch placeholder gets real chrome).
+Open `§14.1` items still defer-able. The first ones that bite during later milestones: M5 polymorphic relations (low risk), M6 APNs key.
 
 ## Revision log
 
@@ -117,7 +120,10 @@ Open `§14.1` items still defer-able. The first ones that bite during M3 are: fu
 - **2026-05** — `4ed442e` completed M1: `apps/users` (email-based custom User, hand-authored 0001 migration, UserAdmin, serializers), allauth + dj-rest-auth + SimpleJWT wired at `/api/auth/*`, public OpenAPI schema, real `openapi-typescript` codegen, conftest.py forcing Celery eager + locmem email in tests, signup/login/me + Celery + schema-served pytest coverage, prod settings tightening JWT cookies + ACCOUNT_DEFAULT_HTTP_PROTOCOL=https. M1 done.
 - **2026-05** — `11b785f` updated MEMORY.md to mark M1 complete + add the M2 cold-context pickup guide.
 - **2026-05** — `d9cc5ec` completed M2 backend: `apps/workspaces` with Workspace + Membership + Role + Invitation models, hand-authored 0001 migration, IsWorkspace{Member|Owner|Admin|Manager} permission classes, WorkspaceJWTAuthentication that resolves active workspace via X-Workspace-Id header, invite flow with Resend magic-link template, public + authenticated accept endpoints, comprehensive pytest coverage (workspace creation, invite + accept round-trip, cross-workspace 403, wrong-email 403, invalid-header 403). Settings switched to the workspace-aware auth class.
-- **2026-05** — `5ee2c33` completed M2 frontend: `@offside/auth-utils` real implementation (memory + browser TokenStores, authFetch with refresh-on-401 and X-Workspace-Id auto-injection), `frontend-web/lib/api.ts` (TanStack Query v5 hooks for current user, workspaces, memberships, invitations, public + accept invitation), `lib/contexts.tsx` (WorkspaceProvider resolving slug → active workspace, AuthGate for client-side redirects), `app/providers.tsx` (QueryClientProvider + auth-failure handler), pages for /login, /signup, /onboarding, /accept-invite/[token], /[workspace]/{layout,page}, and a WorkspaceSwitcher component. Path-segment routing (`/{workspace-slug}/...`) is the canonical convention. M2 done — TC-6 (role promotion UI), TC-7 (cmd-K keyboard switch), and TC-9 (workspace archive UI) deferred to M3+ as documented in commit body.
+- **2026-05** — `5ee2c33` completed M2 frontend: `@offside/auth-utils` real implementation, `frontend-web/lib/api.ts` (TanStack Query v5 hooks), `lib/contexts.tsx`, `app/providers.tsx`, pages for /login, /signup, /onboarding, /accept-invite/[token], /[workspace]/{layout,page}, and a WorkspaceSwitcher. Path-segment routing locked. M2 done — TC-6/7/9 deferred to M3.
+- **2026-05** — `96ff3fd` updated MEMORY.md to mark M2 complete + add M3 cold-context guide.
+- **2026-05** — pushed all commits through `96ff3fd` to `origin/main` (10 commits backed up).
+- **2026-05** — `b4fdaa7` completed M3: AppShell (Sidebar with M-milestone-gated nav + TopBar with platform-correct ⌘K hint) wraps the workspace route group, cmdk-powered CommandPalette with brand styling, useKeyboardShortcut hook handles Cmd-K / "/" / Esc with input-aware filtering. Settings page closes M2 deferrals (TC-6 role PATCH + TC-9 owner archive) backed by six new backend tests. cmdk@^1.0.4 added.
 
 ---
 
