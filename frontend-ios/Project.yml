@@ -38,3 +38,14 @@ targets:
         INFOPLIST_KEY_UIApplicationSupportsMultipleScenes: "NO"
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: "YES"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+    info:
+      properties:
+        # Backend base URL — override per-build for staging/prod (see README).
+        OffsideApiBaseUrl: "http://localhost:8000"
+        # Localhost dev needs an ATS exception so URLSession can hit plain HTTP.
+        # Production builds talk only to https://crm-api.offside.ai and don't need this.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+          NSExceptionDomains:
+            localhost:
+              NSExceptionAllowsInsecureHTTPLoads: true
