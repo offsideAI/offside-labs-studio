@@ -15,12 +15,14 @@
     "@offside/auth-utils": "workspace:*",
     "@offside/ui": "workspace:*",
     "@offside/workflows-sdk": "workspace:*",
+    "@tanstack/react-query": "^5.62.0",
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@offside/config": "workspace:*",
+    "@tanstack/react-query-devtools": "^5.62.0",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.1",

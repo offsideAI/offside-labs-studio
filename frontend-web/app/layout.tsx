@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Roboto, JetBrains_Mono } from "next/font/google";
+
+import { Providers } from "./providers";
 import "./globals.css";
 
 const roboto = Roboto({
@@ -31,7 +33,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a className="skip-link" href="#main">
           Skip to content
         </a>
-        <main id="main">{children}</main>
+        <Providers>
+          <main id="main">{children}</main>
+        </Providers>
       </body>
     </html>
   );

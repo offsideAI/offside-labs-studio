@@ -1,49 +1,18 @@
-// @offside/auth-utils — JWT helpers and fetch interceptors.
+// @offside/auth-utils — JWT helpers, token storage, and a fetch wrapper that
+// auto-attaches Bearer auth + the X-Workspace-Id header and transparently
+// refreshes on 401.
 //
-// The Django backend (see backend/apps/users/) is the auth source of truth.
-// This package mirrors the JWT contract so web + iOS frontends agree on
-// payload shape and refresh semantics.
-//
-// Real implementations land in M2 alongside the workspace + invite flow.
+// Used by frontend-web (M2+) and frontend-ios via a thin Swift wrapper (M6).
+// The Django backend at /api/auth/* is the auth source of truth (PLAN.md §5).
 
-export interface OffsideJwtPayload {
-  sub: string; // user id
-  email: string;
-  active_workspace_id: string | null;
-  exp: number;
-  iat: number;
-}
+export {
+  AuthFetchError,
+  type AuthFetchConfig,
+  type AuthFetchOptions,
+  type OffsideJwtPayload,
+  type Tokens,
+  type TokenStore,
+} from "./types";
 
-export type Tokens = {
-  access: string;
-  refresh: string;
-};
-
-export type TokenStore = {
-  get(): Tokens | null;
-  set(tokens: Tokens): void;
-  clear(): void;
-};
-
-// Stubs — wired up in M2.
-export const memoryTokenStore = (): TokenStore => {
-  let tokens: Tokens | null = null;
-  return {
-    get: () => tokens,
-    set: (next) => {
-      tokens = next;
-    },
-    clear: () => {
-      tokens = null;
-    },
-  };
-};
-
-export interface AuthFetchOptions extends RequestInit {
-  store: TokenStore;
-  refreshUrl: string;
-}
-
-export async function authFetch(_input: RequestInfo | URL, _init: AuthFetchOptions): Promise<Response> {
-  throw new Error("authFetch is not implemented yet — wired up in M2.");
-}
+export { browserTokenStore, memoryTokenStore } from "./tokens";
+export { createAuthFetch } from "./authFetch";
