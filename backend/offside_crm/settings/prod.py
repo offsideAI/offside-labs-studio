@@ -26,3 +26,13 @@ CSRF_TRUSTED_ORIGINS = [
         "https://app.offside.ai,https://crm-api.offside.ai,https://platform.offside.ai",
     ).split(",")
 ]
+
+# --- Auth tightening ---
+
+# Tighten JWT cookie + email links to HTTPS in production.
+REST_AUTH = {  # noqa: F405 — REST_AUTH defined in base
+    **REST_AUTH,  # noqa: F405
+    "JWT_AUTH_SECURE": True,
+}
+
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"

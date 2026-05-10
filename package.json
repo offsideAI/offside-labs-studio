@@ -14,6 +14,12 @@
     "codegen:openapi": "node tools/openapi/codegen.mjs",
     "backend:up": "docker compose -f backend/docker-compose.yml up",
     "backend:down": "docker compose -f backend/docker-compose.yml down",
+    "backend:migrate": "docker compose -f backend/docker-compose.yml exec web python manage.py migrate",
+    "backend:makemigrations": "docker compose -f backend/docker-compose.yml exec web python manage.py makemigrations",
+    "backend:shell": "docker compose -f backend/docker-compose.yml exec web python manage.py shell_plus",
+    "backend:createsuperuser": "docker compose -f backend/docker-compose.yml exec web python manage.py createsuperuser",
+    "backend:test": "docker compose -f backend/docker-compose.yml exec web pytest",
+    "backend:ping": "docker compose -f backend/docker-compose.yml exec web python -c \"from offside_crm.celery import ping; r = ping.delay(); print(r.get(timeout=5))\"",
     "ios:gen": "cd frontend-ios && xcodegen generate"
   },
   "devDependencies": {

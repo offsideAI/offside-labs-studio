@@ -47,8 +47,9 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
+    "apps.users",
     "apps.health",
-    # M1+ adds: apps.users, apps.workspaces, apps.contacts, apps.companies,
+    # M2+ adds: apps.workspaces, apps.contacts, apps.companies,
     # apps.deals, apps.tasks, apps.notes, apps.activities, apps.pipelines,
     # apps.integrations, apps.automations, apps.agents, apps.ai
 ]
@@ -104,7 +105,13 @@ DATABASES = {
 }
 
 # --- Auth ---
-# AUTH_USER_MODEL = "users.User"  # uncomment when M1 lands apps.users
+
+AUTH_USER_MODEL = "users.User"
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -157,7 +164,49 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "AI-native CRM with deeply integrated workflow automation.",
     "VERSION": "0.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
     "COMPONENT_SPLIT_REQUEST": True,
+}
+
+# --- Cache (Redis in prod, locmem in dev fallback) ---
+
+CACHES = {
+    "default": {
+        "BACKEND": (
+            "django.core.cache.backends.redis.RedisCache"
+            if os.environ.get("REDIS_URL")
+            else "django.core.cache.backends.locmem.LocMemCache"
+        ),
+        "LOCATION": os.environ.get("REDIS_URL", "unique-snowflake"),
+    },
+}
+
+# --- allauth (account) ---
+
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_EMAIL_VERIFICATION = os.environ.get("ACCOUNT_EMAIL_VERIFICATION", "mandatory")
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = os.environ.get("ACCOUNT_DEFAULT_HTTP_PROTOCOL", "http")
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True
+ACCOUNT_RATE_LIMITS = {
+    "login_failed": "5/5m/ip,5/5m/key",
+}
+
+# --- dj-rest-auth ---
+
+REST_AUTH = {
+    "USE_JWT": True,
+    "JWT_AUTH_COOKIE": "offside-auth",
+    "JWT_AUTH_REFRESH_COOKIE": "offside-refresh",
+    "JWT_AUTH_HTTPONLY": True,
+    "JWT_AUTH_SECURE": False,  # tightened in prod settings
+    "USER_DETAILS_SERIALIZER": "apps.users.serializers.UserSerializer",
+    "REGISTER_SERIALIZER": "apps.users.serializers.CustomRegisterSerializer",
+    "LOGIN_SERIALIZER": "dj_rest_auth.serializers.LoginSerializer",
 }
 
 # --- Celery ---
