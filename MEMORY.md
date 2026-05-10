@@ -4,11 +4,16 @@
 
 ## Current state (2026-05)
 
-- **Branch:** `main`. Last shipped commit: `5375384` ("Scaffold Offside CRM monorepo with planning docs and shared packages") — not yet pushed to `origin`.
+- **Branch:** `main`. Local is **4 commits ahead of `origin/main`** — not yet pushed.
+- **Latest commits (newest first):**
+  - `d48c5ed` Complete M0 scaffold: backend (Django + Celery + DO Procfile) + iOS (xcodegen + SwiftUI) + CI
+  - `dd2a003` Scaffold M0 phase 2a — web surface (frontend-web + three suite placeholders)
+  - `0090063` Add CLAUDE.md and MEMORY.md for durable repo-level context
+  - `5375384` Scaffold Offside CRM monorepo with planning docs and shared packages
 - **Milestone status:**
-  - **M0 phase 1 — complete.** Root configs (`.gitignore`, `package.json`, `pnpm-workspace.yaml`, `turbo.json`, `.editorconfig`, prettier configs); all six `packages/*` (ui, ai, auth-utils, workflows-sdk, api-client, config); brand tokens copied verbatim into `packages/ui/src/styles/tokens.css`; OpenAPI codegen scaffold at `tools/openapi/codegen.mjs`.
-  - **M0 phase 2 — paused.** Pending: `frontend-web/` (Next.js 15 with `/brand` token-demo route), three suite-app placeholders (`crunch-web/`, `design-web/`, `director-web/`), Django backend (`backend/`) with Celery wiring + Procfile + Dockerfile + docker-compose.yml, `frontend-ios/` (xcodegen Project.yml + minimal SwiftUI sources), `.github/workflows/ci.yml`.
-  - **M1–M15 — pending.** Per [ROADMAP.md](./ROADMAP.md). Estimated total 83 working days ≈ 5.5–7.5 months calendar.
+  - **M0 — complete.** Repo skeleton resolves end-to-end: `pnpm install` resolves all workspaces, `pnpm dev` runs all four web apps (3000/3001/3002/3003), `pnpm backend:up` boots Django + Postgres + Redis + Celery worker + Beat via docker-compose, `pnpm ios:gen` generates a buildable Xcode project, GitHub Actions CI runs on push + PR.
+  - **M1 — pending (next).** Backend foundation: allauth + dj-rest-auth + SimpleJWT custom user, drf-spectacular emitting OpenAPI, Celery `ping` smoke task confirmed end-to-end, OpenAPI codegen wired into `pnpm codegen:openapi`.
+  - **M2–M15 — pending.** Per [ROADMAP.md](./ROADMAP.md). Estimated total 83 working days ≈ 5.5–7.5 months calendar.
 
 ## Locked decisions (interview Rounds 1–7)
 
@@ -78,16 +83,25 @@ Located at `../radianceskincare-app/saucycart-com-backend-django/`. **Reference 
 
 ## Resume points
 
-The user paused after the doc batch was committed. Most likely next move:
+M0 is fully scaffolded. **Next milestone is M1 (backend foundation).**
 
-- **Resume M0 phase 2** — `frontend-web/` (Next.js shell + `/brand` route), three suite placeholders, Django backend foundation (project skeleton + Celery wiring + Procfile + Dockerfile + docker-compose), `frontend-ios/` xcodegen scaffold, GitHub Actions CI workflow.
-- **First files to write at resume:** `frontend-web/{package.json, next.config.mjs, tailwind.config.ts, postcss.config.mjs, tsconfig.json, vercel.json, app/layout.tsx, app/page.tsx, app/brand/page.tsx, app/globals.css, public/favicon.svg, .env.example}`.
+To start M1 from a cold context:
+1. `cd backend/ && pip install -r requirements.txt -r requirements-dev.txt` — install Python deps locally if not using docker.
+2. **Add `apps.users`** Django app (custom email-based User extending `AbstractUser`); add to `LOCAL_APPS` in `settings/base.py`; uncomment `AUTH_USER_MODEL = "users.User"`.
+3. **Wire allauth + dj-rest-auth registration/login URLs** under `/api/auth/` in `offside_crm/urls.py`.
+4. **Configure Resend SMTP** for email verification + password reset templates.
+5. **Replace the `tools/openapi/codegen.mjs` placeholder** with real `openapi-typescript` invocation pointing at `http://localhost:8000/api/schema/`.
+6. **First test:** `POST /api/auth/registration/` returns 201, follow-up `POST /api/auth/login/` returns JWT pair, `GET /api/auth/user/` with bearer returns the user.
+7. **Celery smoke test:** `from offside_crm.celery import ping; ping.delay()` from a Django shell returns a task id; worker logs the result.
 
-Before starting M0 phase 2, no new `§14.1` items are blocking — the open questions there are defer-able to the milestone where they first matter.
+Open `§14.1` items remain defer-able. The first ones that bite during M1 are: APNs key (defer to M6), DO App Platform spec (defer to first deploy).
 
 ## Revision log
 
-- **2026-05** — initial commit `5375384`. PLAN.md rev 2 (Celery substitute, DO App Platform, flat monorepo). PRD / TESTING / ROADMAP added. M0 phase 1 scaffolded. CLAUDE.md + this file added in the next commit.
+- **2026-05** — initial commit `5375384`. PLAN.md rev 2 (Celery substitute, DO App Platform, flat monorepo). PRD / TESTING / ROADMAP added. M0 phase 1 scaffolded.
+- **2026-05** — `0090063` added CLAUDE.md + MEMORY.md (this file) for durable repo-level context.
+- **2026-05** — `dd2a003` scaffolded M0 phase 2a: `frontend-web/` (Next.js 15 + `/brand` token-demo route) and the three suite placeholders (`crunch-web`, `design-web`, `director-web`).
+- **2026-05** — `d48c5ed` completed M0: Django backend (Celery + Procfile + Dockerfile + docker-compose + `apps.health` for liveness/readiness), `frontend-ios/` (xcodegen + SwiftUI placeholder with brand-token parity), GitHub Actions CI workflow. M0 done.
 
 ---
 
