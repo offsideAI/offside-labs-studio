@@ -2,7 +2,7 @@
 
 > Companion to [PRD.md](./PRD.md) and [PLAN.md](./PLAN.md). Each **phase maps 1:1 to an epic.** Inside an epic, work is broken into user stories (the "what" from a user's view) and engineering tasks (the "how"). Acceptance criteria match the milestone demo defined in PLAN.md §13. Cross-references to PRD `FR-N` / `NFR-N` and TESTING `TC-N` are noted on each phase.
 
-**Status:** M0–M7 shipped + pushed to `origin/main`. M8 in progress — backend layer + React Flow canvas / palette / drawer / list / editor pages shipped locally; run inspector UI + NL→graph prompt next.
+**Status:** M0–M7 shipped + pushed to `origin/main`. M8 in progress — M8.S1 + M8.S2 shipped (backend + canvas + versions panel + run inspector). M8.S3 (NL→graph) and HITL HTTP decide endpoint remain.
 **Owner:** Offside Labs.
 **Last revised:** 2026-05.
 
@@ -235,11 +235,11 @@ Color discipline reminder: every UI surface added in any phase MUST consume `pac
 ---
 
 ### `[🏗️]` Phase M8 — Workflow node-graph editor v1 (Epic: Visual Authoring)
-*Status:* in progress — backend + editor canvas shipped, run inspector + NL→graph pending · *Estimate:* 7 days · *Depends on:* M7 · *Covers:* FR-12 (partial) · *Tests:* TC-29, TC-30, TC-31, TC-32
+*Status:* in progress — backend + editor canvas + versions panel + run inspector shipped; NL→graph + HITL HTTP decide endpoint pending · *Estimate:* 7 days · *Depends on:* M7 · *Covers:* FR-12 (partial) · *Tests:* TC-29, TC-30, TC-31, TC-32
 
 **User stories**
 - `[✅]` M8.S1 — As an admin, I can build a workflow visually with React Flow. *Canvas at `/[workspace]/automations/[id]/` ships with @xyflow/react v12, draggable palette (action / branch / delay / approval / wait_for_event / end), custom brand-tokened node renderer with per-type source handles (`true`/`false`, `approve`/`reject`, `next`), drop-onto-canvas, set-as-start, delete, and inline validation overlay.*
-- `[🏗️]` M8.S2 — As an admin, I can save drafts and publish versioned workflows. *Backend complete (AutomationVersion + publish + start_run); frontend complete (300ms debounced autosave to draft + Publish button gated on `validateGraph` issues + workflow status pill + Run button). Run inspector UI is the remaining piece (task #4 / M8.S2 sibling).*
+- `[✅]` M8.S2 — As an admin, I can save drafts and publish versioned workflows. *End-to-end shipped. Backend: `AutomationVersion` snapshot model + `POST /automations/{id}/publish/` + `start_run` attaches the published version + `POST /automation-runs/{id}/cancel/`. Frontend: 300ms debounced autosave to draft, Publish button gated on `validateGraph` issues, status pill + `v{N}` header, slide-in Versions panel listing AutomationVersion rows (with `current` badge + frozen-graph JSON preview), and full per-run Inspector page surfacing step inputs/outputs/cost/idempotency_key with manual Refresh + Cancel-run button (light 3s polling while non-terminal).*
 - `[☑️]` M8.S3 — As an admin, I can describe a workflow in English and have Claude generate the node graph.
 
 **Engineering tasks**
@@ -247,12 +247,14 @@ Color discipline reminder: every UI surface added in any phase MUST consume `pac
 - `[✅]` React Flow canvas — node palette (action / branch / delay / approval / wait_for_event / end). Custom `AutomationNodeView` with multi-handle source ports, dotted Bone background, hidden RF attribution, MiniMap + Controls, drop-from-palette via HTML5 drag.
 - `[✅]` Node config drawer — per-node form driven by node type (action name + JSON input, delay seconds, approval summary + TTL, branch field/op/value, wait_for_event key) with a live JSON textarea that surfaces parse errors inline; Set-as-start + Delete; label editor.
 - `[✅]` Save draft + publish flow — `frontend-web/lib/workflow-graph.ts` round-trips between `AutomationGraph` and React Flow nodes/edges (positions and label are editor-only keys carried through the JSON); 300ms debounced PATCH on every change with a hash gate to skip no-op writes; Publish button gated on `validateGraph` returning zero issues; status pill + version pointer (`v{N}`) in the header.
+- `[✅]` Versions panel — `components/workflow-versions-panel.tsx`. Slide-in side panel toggled from a header button (with count badge), top half lists versions newest-first with `current` badge on the active one, bottom half shows the selected version's frozen graph + trigger as collapsible JSON blocks. Wires `useAutomationVersions`.
+- `[✅]` Run inspector — `app/[workspace]/automations/[id]/runs/[runId]/page.tsx`. Status pill per `RunStatus` (running→info, awaiting_*→warning, completed→success, failed→danger), version pointer, Refresh + Cancel toolbar (Cancel gated on terminal status), metadata grid (started / finished / current step / total cost summing step_runs[].cost_cents), step-runs list with per-step status pill + `current` badge matching `run.current_step_id`, collapsible input/output/error JSON, surfaced `idempotency_key` for replay debugging, state-snapshot + trigger-payload JSON. Light 3s refetch loop while non-terminal so the page feels live.
 - `[☑️]` "Describe in English" panel — Claude prompt `automations.author_from_nl.v1` returns JSON graph; canvas hydrates.
 - `[☑️]` Undo/redo on canvas edits.
 - `[🏗️]` Schema validator — light validator on the backend (`graph.validate` — `start_node_id` + `nodes` shape + known node types) runs on publish; full client-side validator in `lib/workflow-graph.ts` now covers disconnected nodes (reachability from start), missing required outgoing edges per node type, missing `action.config.action`, missing `branch.config.field`, and dangling edge targets. Type-mismatch checks between adjacent nodes (e.g. branch field vs action output schema) still pending.
 
 **Acceptance criteria**
-- `[🏗️]` TC-29 (build 4-step workflow — canvas + palette + drawer + autosave + 18 backend tests shipped; manual UI smoke-test pending toolchain), TC-30 (describe-in-English — pending), TC-31 (draft/publish versioning — backend immutability proven + frontend Publish/Run buttons + status pill + version footer shipped), TC-32 (validator blocks malformed graphs — Publish button is now blocked when `validateGraph` returns any issue; structural rules cover reachability + missing edges + missing per-type config).
+- `[🏗️]` TC-29 (build 4-step workflow — canvas + palette + drawer + autosave + 18 backend tests shipped; manual UI smoke-test pending toolchain), TC-30 (describe-in-English — pending), TC-31 (draft/publish versioning — backend immutability proven + frontend Publish/Run buttons + status pill + Versions panel listing every snapshot + Run inspector surfacing step outputs against the bound version), TC-32 (validator blocks malformed graphs — Publish button is blocked when `validateGraph` returns any issue; stuck runs cancellable from the Inspector).
 
 **Frontend dependency added**
 - `@xyflow/react ^12.3.5` (~140kb gz, MIT). User-approved via AskUserQuestion ahead of `pnpm install`.
@@ -594,6 +596,21 @@ M8 frontend canvas landed; M8.S1 flipped from ☑️ to ✅, M8.S2 remains 🏗�
 - **Brand-token fixes.** Caught during the pass: `StatusPillTone "positive"` → `"success"`; nonexistent `clay`/`positive` Tailwind colors replaced with the StatusPill danger/success hexes (`#8E3B30`, `#3B6A4A`) and the `#c98f89` clay hex for the approval node border.
 
 Remaining for M8: run inspector UI (task #4), describe-in-English panel + Claude prompt + telemetry (task #3), HITL HTTP decide endpoint, undo/redo. Manual UI smoke pending `pnpm install && pnpm dev` once the toolchain is up — no `pnpm`/`node` were available on this machine to typecheck the frontend slice.
+
+### Revision 5 — 2026-05 — M8 versions panel + run inspector
+
+M8.S2 flipped from 🏗️ to ✅ as the two remaining frontend pieces landed.
+
+- **Versions panel.** New `frontend-web/components/workflow-versions-panel.tsx`. Slide-in panel on the editor's right edge (`absolute inset-y-0 right-0`, shadow-soft-3). Top half scrolls through `AutomationVersion` rows newest-first with version number, published_at, published_by, and a tan-bordered `current` badge on the row matching `automation.published_version`. Selecting a row reveals the bottom half: `Eyebrow` header, node-count summary, and two collapsible `<details>` JSON blocks (`graph`, `trigger`). Wires the already-shipped `useAutomationVersions` hook — no new API surface needed.
+- **Editor toolbar.** `app/[workspace]/automations/[id]/page.tsx` gains a `Versions` button in the header (with a tiny font-mono count badge) that toggles the panel. Canvas + panel are wrapped in a shared `relative flex-1` container so the panel's absolute positioning anchors to the canvas area instead of the page.
+- **Run inspector page.** New `app/[workspace]/automations/[id]/runs/[runId]/page.tsx`. Back-link to the parent workflow, `StatusPill` colored per `RunStatus` (running→info, awaiting_*→warning, completed→success, failed→danger), version-pointer badge, Run #N title with tan-period.
+- **Inspector toolbar.** Refresh button (manual `run.refetch()`) + Cancel button gated on `TERMINAL.has(status)` (set: completed, failed, cancelled). Cancel hits `useCancelAutomationRun`, surfaces failures inline. Inflight runs (`!TERMINAL.has`) get a 3s polling loop while the page is open so the inspector feels live.
+- **Metadata grid.** Started / Finished / Current step / Total cost (sums `step_runs[].cost_cents`). Cost formatted via Intl.NumberFormat USD with 4-decimal precision under 100¢ for the cheap-LLM-call case.
+- **Step runs list.** Per-step card with `step_id`, attempt counter, status pill, and a tan ring + `current` badge when `step_id === run.current_step_id`. Header row exposes started/finished timestamps, model, cost. Body surfaces the load-bearing `idempotency_key` line for replay debugging plus three collapsible JSON blocks: input, output, and error (when present).
+- **Bottom sections.** `state_snapshot` (per-node outputs available to downstream `{{ <node_id>.<field> }}` templates) and `trigger_payload` as collapsible JSON blocks. Tan-text Eyebrow labels throughout.
+- **Wiring fix.** Closes the per-run links in the editor footer that previously 404'd.
+
+Remaining for M8: M8.S3 (NL→graph prompt + canvas hydration + cost/latency telemetry), HITL HTTP decide endpoint, undo/redo, type-mismatch validator. Manual UI smoke still pending toolchain.
 
 ---
 
