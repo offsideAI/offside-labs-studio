@@ -14,6 +14,7 @@ from .models import (
     Automation,
     AutomationRun,
     AutomationStepRun,
+    AutomationVersion,
     HitlRequest,
 )
 
@@ -23,8 +24,24 @@ class AutomationAdmin(admin.ModelAdmin):
     list_display = ("name", "version", "status", "workspace", "created_by", "created_at")
     list_filter = ("status",)
     search_fields = ("name", "workspace__slug")
-    autocomplete_fields = ("workspace", "created_by")
+    autocomplete_fields = ("workspace", "created_by", "published_version")
     readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(AutomationVersion)
+class AutomationVersionAdmin(admin.ModelAdmin):
+    list_display = ("automation", "version_number", "published_by", "published_at")
+    search_fields = ("automation__name",)
+    readonly_fields = (
+        "automation",
+        "workspace",
+        "version_number",
+        "graph",
+        "trigger",
+        "published_by",
+        "published_at",
+    )
+    autocomplete_fields = ("automation", "workspace", "published_by")
 
 
 class AutomationStepRunInline(admin.TabularInline):

@@ -29,15 +29,26 @@ from . import actions, graph
 from .exceptions import ActionError, GraphError, WorkflowError
 from .hitl import DEFAULT_TTL, make_token
 from .models import (
+    Automation,
     AutomationRun,
     AutomationStepRun,
+    AutomationStatus,
+    AutomationVersion,
     HitlRequest,
     PARKED_STATUSES,
     RunStatus,
     StepRunStatus,
+    TERMINAL_STATUSES,
 )
 
 log = logging.getLogger("apps.automations.runtime")
+
+
+def _graph_for(run: AutomationRun) -> dict:
+    """The frozen graph a run is bound to (falls back to draft for legacy runs)."""
+    if run.version_id:
+        return run.version.graph
+    return run.automation.graph
 
 
 @shared_task(name="automations.run_advancer", bind=True, max_retries=3)
@@ -62,11 +73,12 @@ def run_advancer(self, run_id: int) -> str:  # type: ignore[no-untyped-def]
         # Capture the Celery task id for traceability.
         run.advancer_task_id = (self.request.id or "")[:64]
 
-        # Determine the current node.
+        # Determine the current node from the version-frozen graph.
         try:
+            run_graph = _graph_for(run)
             if not run.current_step_id:
-                run.current_step_id = graph.start_node_id(run.automation.graph)
-            node = graph.get_node(run.automation.graph, run.current_step_id)
+                run.current_step_id = graph.start_node_id(run_graph)
+            node = graph.get_node(run_graph, run.current_step_id)
         except GraphError as exc:
             return _fail_run(run, "GraphError", str(exc))
 
@@ -241,15 +253,70 @@ def wake_up_sweep() -> int:
 
 
 def kick_off(run: AutomationRun) -> AutomationRun:
-    """Mark a run as PENDING and enqueue the first advancer.
+    """Mark a run as PENDING, attach the published version, enqueue the advancer.
 
-    Used by views, signals, and tests. Idempotent w.r.t. status.
+    If `run.version` is unset and the automation has a published version, we
+    attach it here so subsequent edits to the draft graph can't change the
+    run's behavior. If the automation has no published version *and* no draft
+    graph (a brand-new automation with no nodes), the run fails immediately.
     """
+    if not run.version_id and run.automation.published_version_id:
+        run.version_id = run.automation.published_version_id
+        run.save(update_fields=["version"])
+
+    if not run.version_id and not (run.automation.graph or {}).get("nodes"):
+        run.status = RunStatus.FAILED
+        run.finished_at = timezone.now()
+        run.save(update_fields=["status", "finished_at"])
+        log.warning("kick_off: automation %s has no published version or draft graph", run.automation_id)
+        return run
+
     if run.status not in {RunStatus.PENDING, RunStatus.RUNNING}:
         run.status = RunStatus.PENDING
         run.save(update_fields=["status"])
     run_advancer.delay(run.pk)
     return run
+
+
+def publish_automation(automation: Automation, user) -> AutomationVersion:  # type: ignore[no-untyped-def]
+    """Snapshot the automation's current draft into a new immutable version.
+
+    Bumps `automation.version` and points `automation.published_version` at
+    the snapshot. Flips DRAFT → ACTIVE on first publish. Validates the graph
+    before snapshotting; raises GraphError on invalid graphs.
+    """
+    graph.validate(automation.graph)
+    with transaction.atomic():
+        a = Automation.objects.select_for_update().get(pk=automation.pk)
+        new_number = (a.version or 0) + 1
+        version = AutomationVersion.objects.create(
+            automation=a,
+            workspace=a.workspace,
+            version_number=new_number,
+            graph=a.graph,
+            trigger=a.trigger,
+            published_by=user,
+        )
+        a.published_version = version
+        a.version = new_number
+        update_fields = ["published_version", "version"]
+        if a.status == AutomationStatus.DRAFT:
+            a.status = AutomationStatus.ACTIVE
+            update_fields.append("status")
+        a.save(update_fields=update_fields)
+    return version
+
+
+def cancel_run(run: AutomationRun) -> str:
+    """Mark a run as CANCELLED. No-op if already terminal."""
+    with transaction.atomic():
+        r = AutomationRun.objects.select_for_update().get(pk=run.pk)
+        if r.status in TERMINAL_STATUSES:
+            return r.status
+        r.status = RunStatus.CANCELLED
+        r.finished_at = timezone.now()
+        r.save(update_fields=["status", "finished_at"])
+    return RunStatus.CANCELLED
 
 
 def resume_after_hitl(*, run_id: int, decision: str) -> str:
@@ -262,7 +329,7 @@ def resume_after_hitl(*, run_id: int, decision: str) -> str:
         if run.status != RunStatus.AWAITING_APPROVAL:
             return run.status
 
-        node = graph.get_node(run.automation.graph, run.current_step_id)
+        node = graph.get_node(_graph_for(run), run.current_step_id)
         next_id = node.get("approve_next") if decision == "approve" else node.get("reject_next")
 
         if not next_id:
@@ -284,5 +351,7 @@ __all__ = [
     "wake_up_sweep",
     "kick_off",
     "resume_after_hitl",
+    "publish_automation",
+    "cancel_run",
     "PARKED_STATUSES",
 ]

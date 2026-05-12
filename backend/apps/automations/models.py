@@ -59,6 +59,14 @@ class HitlDecision(models.TextChoices):
 
 
 class Automation(models.Model):
+    """A workflow definition.
+
+    `graph` + `trigger` here are the mutable **draft**. Publishing snapshots
+    them into an immutable `AutomationVersion` and points
+    `published_version` at the new row. Runs always reference a specific
+    version, so editing a draft never changes the behavior of in-flight runs.
+    """
+
     workspace = models.ForeignKey(
         "workspaces.Workspace",
         on_delete=models.CASCADE,
@@ -72,7 +80,15 @@ class Automation(models.Model):
     )
     trigger = models.JSONField(default=dict, blank=True)
     graph = models.JSONField(default=dict, blank=True)
-    version = models.IntegerField(default=1)
+    version = models.IntegerField(default=0)
+
+    published_version = models.ForeignKey(
+        "AutomationVersion",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
 
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -94,9 +110,58 @@ class Automation(models.Model):
         return f"{self.name} v{self.version}"
 
 
+class AutomationVersion(models.Model):
+    """Immutable snapshot of an automation's graph + trigger at publish time.
+
+    Runs reference one of these (not the parent Automation's mutable
+    `graph`) so a workflow can be edited without disturbing in-flight runs.
+    """
+
+    automation = models.ForeignKey(
+        Automation, on_delete=models.CASCADE, related_name="versions"
+    )
+    workspace = models.ForeignKey(
+        "workspaces.Workspace",
+        on_delete=models.CASCADE,
+        related_name="automation_versions",
+    )
+    version_number = models.IntegerField()
+    graph = models.JSONField()
+    trigger = models.JSONField(default=dict, blank=True)
+    published_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="automation_versions_published",
+    )
+    published_at = models.DateTimeField(auto_now_add=True)
+
+    objects = WorkspaceScopedManager()
+
+    class Meta:
+        ordering = ["-version_number"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["automation", "version_number"],
+                name="unique_automation_version_number",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.automation.name} v{self.version_number}"
+
+
 class AutomationRun(models.Model):
     automation = models.ForeignKey(
         Automation, on_delete=models.PROTECT, related_name="runs"
+    )
+    # Nullable for M7 runs that pre-date AutomationVersion. New runs created
+    # via `kick_off` attach the Automation's published_version automatically.
+    version = models.ForeignKey(
+        AutomationVersion,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="runs",
     )
     workspace = models.ForeignKey(
         "workspaces.Workspace",
