@@ -2,7 +2,7 @@
 
 > Companion to [PRD.md](./PRD.md) and [PLAN.md](./PLAN.md). Each **phase maps 1:1 to an epic.** Inside an epic, work is broken into user stories (the "what" from a user's view) and engineering tasks (the "how"). Acceptance criteria match the milestone demo defined in PLAN.md §13. Cross-references to PRD `FR-N` / `NFR-N` and TESTING `TC-N` are noted on each phase.
 
-**Status:** M0–M7 shipped + pushed to `origin/main`. M8 is next.
+**Status:** M0–M7 shipped + pushed to `origin/main`. M8 in progress — backend layer (AutomationVersion + DRF surface) shipped locally; React Flow canvas + run inspector UI next.
 **Owner:** Offside Labs.
 **Last revised:** 2026-05.
 
@@ -234,25 +234,25 @@ Color discipline reminder: every UI surface added in any phase MUST consume `pac
 
 ---
 
-### `[☑️]` Phase M8 — Workflow node-graph editor v1 (Epic: Visual Authoring)
-*Status:* pending (next) · *Estimate:* 7 days · *Depends on:* M7 · *Covers:* FR-12 (partial) · *Tests:* TC-29, TC-30, TC-31, TC-32
+### `[🏗️]` Phase M8 — Workflow node-graph editor v1 (Epic: Visual Authoring)
+*Status:* in progress — backend shipped, frontend pending · *Estimate:* 7 days · *Depends on:* M7 · *Covers:* FR-12 (partial) · *Tests:* TC-29, TC-30, TC-31, TC-32
 
 **User stories**
 - `[☑️]` M8.S1 — As an admin, I can build a workflow visually with React Flow.
-- `[☑️]` M8.S2 — As an admin, I can save drafts and publish versioned workflows.
+- `[🏗️]` M8.S2 — As an admin, I can save drafts and publish versioned workflows. *Backend: `AutomationVersion` snapshot model + `POST /automations/{id}/publish/` + `start_run` attaches the published version + run inspector list/detail. Frontend (canvas + publish button) pending.*
 - `[☑️]` M8.S3 — As an admin, I can describe a workflow in English and have Claude generate the node graph.
 
 **Engineering tasks**
-- `[☑️]` M7 phase 2 prerequisite — DRF ViewSets for `/api/automations/` + `/api/runs/` + `/api/hitl/<token>/decide/` + permission gating + tests.
+- `[🏗️]` M7 phase 2 prerequisite — DRF ViewSets for `/api/automations/` + `/api/automation-runs/` + `/api/automation-versions/` (CRUD, publish, versions, start_run, cancel) shipped with manager-gated writes and 18 tests. `/api/hitl/<token>/decide/` endpoint still pending — `hitl.py` service exists from M7 but is not yet wired to DRF.
 - `[☑️]` React Flow canvas — node palette (subset: trigger, AI step, action, branch, delay, approval, end).
 - `[☑️]` Node config drawer — per-node form driven by the node's schema.
-- `[☑️]` Save draft + publish flow — version bump on publish; in-flight runs continue on their original version.
+- `[🏗️]` Save draft + publish flow — version bump on publish; in-flight runs continue on their original version. *Backend complete: `AutomationVersion` (immutable snapshot, unique `(automation, version_number)`), `AutomationRun.version` FK, `tasks.publish_automation` flips DRAFT→ACTIVE and bumps `Automation.published_version`, `run_advancer`/`resume_after_hitl` read from the frozen version graph, load-bearing test_in_flight_run_unaffected_by_draft_edit. Frontend draft/publish UI pending.*
 - `[☑️]` "Describe in English" panel — Claude prompt `automations.author_from_nl.v1` returns JSON graph; canvas hydrates.
 - `[☑️]` Undo/redo on canvas edits.
-- `[☑️]` Schema validator — disconnected nodes, missing required fields, type mismatches between adjacent nodes.
+- `[🏗️]` Schema validator — disconnected nodes, missing required fields, type mismatches between adjacent nodes. *Light validator (`graph.validate` — checks `nodes` object, `start_node_id`, node types) runs on publish; full structural validation pending.*
 
 **Acceptance criteria**
-- `[☑️]` TC-29 (build 4-step workflow), TC-30 (describe-in-English generation), TC-31 (draft/publish versioning), TC-32 (validator blocks malformed graphs).
+- `[🏗️]` TC-29 (build 4-step workflow — backend publish endpoint + 18 tests; frontend canvas pending), TC-30 (describe-in-English — pending), TC-31 (draft/publish versioning — backend immutability proven; frontend pending), TC-32 (validator blocks malformed graphs — partial: `cancel_run` ships + tested; structural validator pending).
 
 ---
 
@@ -546,7 +546,7 @@ M0 ──► M1 ──► M2 ──► M3 ──► M4 ──► M5 ──► M6
 | M5  | 4 | `[✅]` |
 | M6  | 5 | `[✅]` |
 | M7  | 7 | `[✅]` |
-| M8  | 7 | `[☑️]` |
+| M8  | 7 | `[🏗️]` |
 | M9  | 7 | `[☑️]` |
 | M10 | 7 | `[☑️]` |
 | M11 | 6 | `[☑️]` |
@@ -567,6 +567,17 @@ This file gets a one-line status tick at the top of each phase as the project ad
 ### Revision 2 — 2026-05
 
 Added per-task `[✅]/[🏗️]/[☑️]` checkboxes throughout. M0–M7 marked complete (matching MEMORY.md commits `5375384` … `e69dfa3`). Deferred items inside completed milestones flagged ☑️ with the milestone they roll forward to (M6 cache + APNs + tasks tab → M13; M3 axe-clean + screen-reader pass → M15; M7 HITL HTTP endpoint → M7 phase 2; M7 PeriodicTask migration → M15). M14 picked up FR-25 audit-log admin UI + TC-14 bulk edit to match PRD.
+
+### Revision 3 — 2026-05 — M8 backend slice
+
+M8 flipped from ☑️ to 🏗️ as the backend portion landed:
+
+- **Model layer.** New `AutomationVersion` (immutable snapshot, unique on `(automation, version_number)`), `Automation.published_version` FK (SET_NULL), `AutomationRun.version` FK (PROTECT, nullable for M7 backward compat). Migration `0002_automationversion.py`.
+- **Runtime.** `tasks.publish_automation` snapshots draft → new version, bumps `Automation.version`, flips DRAFT→ACTIVE on first publish, validates graph. `tasks.cancel_run` is idempotent on terminal status. `kick_off` auto-attaches `automation.published_version`. `run_advancer` and `resume_after_hitl` read the frozen `version.graph` (M7 versionless runs fall back to the draft graph for backward compat).
+- **DRF.** `AutomationViewSet` (CRUD + `publish`, `versions`, `start_run` actions), `AutomationRunViewSet` (read-only list/detail with `step_runs` inlined for the inspector + `cancel` action), `AutomationVersionViewSet` (flat read-only). Manager-gated on writes/publish/start/cancel. Wired into `offside_crm/urls.py`.
+- **Tests.** 18 new: load-bearing `test_in_flight_run_unaffected_by_draft_edit` proves a draft edit can't change a running v1 run's output. Covers TC-29 (publish creates v1), TC-30 (edit + republish → v2 alongside v1), TC-32 (cancel a stuck delay run); plus workspace isolation, invalid-graph rejection, kick_off fallback paths, cancel idempotency.
+
+Remaining for M8: React Flow canvas, node config drawer, describe-in-English panel, undo/redo, full structural validator, HITL HTTP decide endpoint.
 
 ---
 
