@@ -19,6 +19,7 @@ import { useActiveWorkspace } from "../../../../lib/contexts";
 import { validateGraph } from "../../../../lib/workflow-graph";
 
 import { WorkflowCanvas } from "../../../../components/workflow-canvas";
+import { WorkflowVersionsPanel } from "../../../../components/workflow-versions-panel";
 
 const STATUS_TONE: Record<AutomationStatus, StatusPillTone> = {
   draft: "neutral",
@@ -60,6 +61,7 @@ const AutomationEditor = ({
   const [draftName, setDraftName] = React.useState<string>("");
   const [saveState, setSaveState] = React.useState<"idle" | "saving" | "saved" | "error">("idle");
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+  const [versionsOpen, setVersionsOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (automation && draftName === "") setDraftName(automation.name);
@@ -127,6 +129,7 @@ const AutomationEditor = ({
   const issues = validateGraph(automation.graph);
   const publishedNumber = automation.version;
   const runList = runs.data?.results ?? [];
+  const versionList = versions.data?.results ?? [];
 
   return (
     <div className="flex h-[calc(100vh-64px)] flex-col">
@@ -159,6 +162,17 @@ const AutomationEditor = ({
             <SaveIndicator state={saveState} />
             <button
               type="button"
+              onClick={() => setVersionsOpen((v) => !v)}
+              aria-expanded={versionsOpen}
+              className="inline-flex h-9 items-center gap-1.5 rounded-sm border hairline bg-bone px-3 text-sm font-medium hover:border-tan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan"
+            >
+              Versions
+              <span className="font-mono text-[10px] text-fg-muted">
+                {versionList.length}
+              </span>
+            </button>
+            <button
+              type="button"
               onClick={onRun}
               disabled={startRun.isPending || !automation.published_version}
               title={
@@ -187,7 +201,16 @@ const AutomationEditor = ({
         ) : null}
       </header>
 
-      <WorkflowCanvas graph={automation.graph} onChange={onGraphChange} />
+      <div className="relative flex-1">
+        <WorkflowCanvas graph={automation.graph} onChange={onGraphChange} />
+        <WorkflowVersionsPanel
+          open={versionsOpen}
+          versions={versionList}
+          publishedVersionId={automation.published_version}
+          isLoading={versions.isLoading}
+          onClose={() => setVersionsOpen(false)}
+        />
+      </div>
 
       <footer className="border-t hairline bg-bone px-6 py-3">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
