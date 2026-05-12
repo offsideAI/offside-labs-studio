@@ -58,8 +58,9 @@ LOCAL_APPS = [
     "apps.notes",
     "apps.activities",
     "apps.automations",
+    "apps.ai",
     "apps.health",
-    # M6+ adds: apps.integrations, apps.automations, apps.agents, apps.ai
+    # M6+ adds: apps.integrations, apps.agents
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

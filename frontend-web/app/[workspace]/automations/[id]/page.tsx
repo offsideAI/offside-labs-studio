@@ -8,9 +8,11 @@ import * as React from "react";
 import {
   type AutomationGraph,
   type AutomationStatus,
+  type GenerateFromNLResponse,
   useAutomation,
   useAutomationRuns,
   useAutomationVersions,
+  useGenerateFromNL,
   usePublishAutomation,
   useStartAutomationRun,
   useUpdateAutomation,
@@ -19,6 +21,7 @@ import { useActiveWorkspace } from "../../../../lib/contexts";
 import { validateGraph } from "../../../../lib/workflow-graph";
 
 import { WorkflowCanvas } from "../../../../components/workflow-canvas";
+import { WorkflowNLPanel } from "../../../../components/workflow-nl-panel";
 import { WorkflowVersionsPanel } from "../../../../components/workflow-versions-panel";
 
 const STATUS_TONE: Record<AutomationStatus, StatusPillTone> = {
@@ -56,12 +59,16 @@ const AutomationEditor = ({
   const update = useUpdateAutomation(workspaceId);
   const publish = usePublishAutomation(workspaceId);
   const startRun = useStartAutomationRun(workspaceId);
+  const generate = useGenerateFromNL(workspaceId);
 
   const automation = auto.data;
   const [draftName, setDraftName] = React.useState<string>("");
   const [saveState, setSaveState] = React.useState<"idle" | "saving" | "saved" | "error">("idle");
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
   const [versionsOpen, setVersionsOpen] = React.useState(false);
+  const [nlOpen, setNlOpen] = React.useState(false);
+  const [nlPreview, setNlPreview] = React.useState<GenerateFromNLResponse | null>(null);
+  const [nlError, setNlError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (automation && draftName === "") setDraftName(automation.name);
@@ -97,6 +104,25 @@ const AutomationEditor = ({
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Publish failed");
     }
+  };
+
+  const onGenerate = async (description: string) => {
+    if (!automation) return;
+    setNlError(null);
+    setNlPreview(null);
+    try {
+      const result = await generate.mutateAsync({ id: automation.id, description });
+      setNlPreview(result);
+    } catch (err) {
+      setNlError(err instanceof Error ? err.message : "Generation failed");
+    }
+  };
+
+  const onApplyPreview = async () => {
+    if (!automation || !nlPreview) return;
+    await onGraphChange(nlPreview.graph);
+    setNlPreview(null);
+    setNlOpen(false);
   };
 
   const onRun = async () => {
@@ -162,6 +188,18 @@ const AutomationEditor = ({
             <SaveIndicator state={saveState} />
             <button
               type="button"
+              onClick={() => setNlOpen((v) => !v)}
+              aria-expanded={nlOpen}
+              className="inline-flex h-9 items-center gap-1.5 rounded-sm border hairline bg-bone px-3 text-sm font-medium hover:border-tan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan"
+              title="Describe a workflow in English and let Claude propose the graph"
+            >
+              Describe
+              <span className="font-mono text-[9px] uppercase tracking-eyebrow text-tan-text">
+                AI
+              </span>
+            </button>
+            <button
+              type="button"
               onClick={() => setVersionsOpen((v) => !v)}
               aria-expanded={versionsOpen}
               className="inline-flex h-9 items-center gap-1.5 rounded-sm border hairline bg-bone px-3 text-sm font-medium hover:border-tan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan"
@@ -200,6 +238,24 @@ const AutomationEditor = ({
           <p className="mt-2 font-mono text-[11px] text-[#8E3B30]">{errorMsg}</p>
         ) : null}
       </header>
+
+      <WorkflowNLPanel
+        open={nlOpen}
+        isPending={generate.isPending}
+        error={nlError}
+        preview={nlPreview}
+        onGenerate={onGenerate}
+        onApply={onApplyPreview}
+        onDiscard={() => {
+          setNlPreview(null);
+          setNlError(null);
+        }}
+        onClose={() => {
+          setNlOpen(false);
+          setNlPreview(null);
+          setNlError(null);
+        }}
+      />
 
       <div className="relative flex-1">
         <WorkflowCanvas graph={automation.graph} onChange={onGraphChange} />

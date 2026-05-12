@@ -25,6 +25,9 @@ from .serializers import (
 from .tasks import cancel_run as cancel_run_service
 from .tasks import kick_off, publish_automation
 
+from apps.ai.exceptions import AIClientError, AIResponseError
+from apps.ai.services import generate_automation_graph
+
 
 class AutomationViewSet(viewsets.ModelViewSet):
     serializer_class = AutomationSerializer
@@ -39,6 +42,7 @@ class AutomationViewSet(viewsets.ModelViewSet):
             "destroy",
             "publish",
             "start_run",
+            "generate_from_nl",
         }:
             return [IsWorkspaceManager()]
         return [IsWorkspaceMember()]
@@ -77,6 +81,41 @@ class AutomationViewSet(viewsets.ModelViewSet):
         if page is not None:
             return self.get_paginated_response(serializer.data)
         return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], url_path="generate_from_nl")
+    def generate_from_nl(self, request, pk=None):  # type: ignore[no-untyped-def]
+        """Run the `automations.author_from_nl.v1` Claude prompt and return a
+        proposed graph WITHOUT saving. The frontend reviews + commits via PATCH.
+        """
+        automation = self.get_object()
+        description = (request.data.get("description") or "").strip()
+        if not description:
+            raise ValidationError({"description": "required"})
+        workspace_context = (request.data.get("workspace_context") or "").strip()
+        try:
+            graph, response = generate_automation_graph(
+                workspace=automation.workspace,
+                description=description,
+                requested_by=request.user,
+                workspace_context=workspace_context,
+            )
+        except AIResponseError as exc:
+            raise ValidationError({"graph": str(exc)}) from exc
+        except AIClientError as exc:
+            return Response(
+                {"detail": f"AI provider error: {exc}"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        return Response(
+            {
+                "graph": graph,
+                "model": response.model,
+                "tokens_in": response.tokens_in,
+                "tokens_out": response.tokens_out,
+                "latency_ms": response.latency_ms,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     @action(detail=True, methods=["post"], url_path="start_run")
     def start_run(self, request, pk=None):  # type: ignore[no-untyped-def]

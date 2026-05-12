@@ -1126,6 +1126,34 @@ export const useAutomationRun = (
     enabled: Boolean(workspaceId && runId) && apiTokens.hasSession(),
   });
 
+export interface GenerateFromNLResponse {
+  graph: AutomationGraph;
+  model: string;
+  tokens_in: number;
+  tokens_out: number;
+  latency_ms: number;
+}
+
+export const useGenerateFromNL = (workspaceId: number | null | undefined) =>
+  useMutation({
+    mutationFn: (input: {
+      id: number | string;
+      description: string;
+      workspace_context?: string;
+    }) =>
+      fetcher.authFetch<GenerateFromNLResponse>(
+        `/api/automations/${input.id}/generate_from_nl/`,
+        {
+          method: "POST",
+          body: {
+            description: input.description,
+            workspace_context: input.workspace_context ?? "",
+          },
+          workspaceId: workspaceId ?? undefined,
+        },
+      ),
+  });
+
 export const useCancelAutomationRun = (workspaceId: number | null | undefined) => {
   const qc = useQueryClient();
   return useMutation({
