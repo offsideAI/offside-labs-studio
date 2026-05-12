@@ -2,7 +2,7 @@
 
 > Companion to [PRD.md](./PRD.md) and [PLAN.md](./PLAN.md). Each **phase maps 1:1 to an epic.** Inside an epic, work is broken into user stories (the "what" from a user's view) and engineering tasks (the "how"). Acceptance criteria match the milestone demo defined in PLAN.md §13. Cross-references to PRD `FR-N` / `NFR-N` and TESTING `TC-N` are noted on each phase.
 
-**Status:** M0–M7 shipped + pushed to `origin/main`. M8 in progress — backend layer (AutomationVersion + DRF surface) shipped locally; React Flow canvas + run inspector UI next.
+**Status:** M0–M7 shipped + pushed to `origin/main`. M8 in progress — backend layer + React Flow canvas / palette / drawer / list / editor pages shipped locally; run inspector UI + NL→graph prompt next.
 **Owner:** Offside Labs.
 **Last revised:** 2026-05.
 
@@ -235,24 +235,27 @@ Color discipline reminder: every UI surface added in any phase MUST consume `pac
 ---
 
 ### `[🏗️]` Phase M8 — Workflow node-graph editor v1 (Epic: Visual Authoring)
-*Status:* in progress — backend shipped, frontend pending · *Estimate:* 7 days · *Depends on:* M7 · *Covers:* FR-12 (partial) · *Tests:* TC-29, TC-30, TC-31, TC-32
+*Status:* in progress — backend + editor canvas shipped, run inspector + NL→graph pending · *Estimate:* 7 days · *Depends on:* M7 · *Covers:* FR-12 (partial) · *Tests:* TC-29, TC-30, TC-31, TC-32
 
 **User stories**
-- `[☑️]` M8.S1 — As an admin, I can build a workflow visually with React Flow.
-- `[🏗️]` M8.S2 — As an admin, I can save drafts and publish versioned workflows. *Backend: `AutomationVersion` snapshot model + `POST /automations/{id}/publish/` + `start_run` attaches the published version + run inspector list/detail. Frontend (canvas + publish button) pending.*
+- `[✅]` M8.S1 — As an admin, I can build a workflow visually with React Flow. *Canvas at `/[workspace]/automations/[id]/` ships with @xyflow/react v12, draggable palette (action / branch / delay / approval / wait_for_event / end), custom brand-tokened node renderer with per-type source handles (`true`/`false`, `approve`/`reject`, `next`), drop-onto-canvas, set-as-start, delete, and inline validation overlay.*
+- `[🏗️]` M8.S2 — As an admin, I can save drafts and publish versioned workflows. *Backend complete (AutomationVersion + publish + start_run); frontend complete (300ms debounced autosave to draft + Publish button gated on `validateGraph` issues + workflow status pill + Run button). Run inspector UI is the remaining piece (task #4 / M8.S2 sibling).*
 - `[☑️]` M8.S3 — As an admin, I can describe a workflow in English and have Claude generate the node graph.
 
 **Engineering tasks**
 - `[🏗️]` M7 phase 2 prerequisite — DRF ViewSets for `/api/automations/` + `/api/automation-runs/` + `/api/automation-versions/` (CRUD, publish, versions, start_run, cancel) shipped with manager-gated writes and 18 tests. `/api/hitl/<token>/decide/` endpoint still pending — `hitl.py` service exists from M7 but is not yet wired to DRF.
-- `[☑️]` React Flow canvas — node palette (subset: trigger, AI step, action, branch, delay, approval, end).
-- `[☑️]` Node config drawer — per-node form driven by the node's schema.
-- `[🏗️]` Save draft + publish flow — version bump on publish; in-flight runs continue on their original version. *Backend complete: `AutomationVersion` (immutable snapshot, unique `(automation, version_number)`), `AutomationRun.version` FK, `tasks.publish_automation` flips DRAFT→ACTIVE and bumps `Automation.published_version`, `run_advancer`/`resume_after_hitl` read from the frozen version graph, load-bearing test_in_flight_run_unaffected_by_draft_edit. Frontend draft/publish UI pending.*
+- `[✅]` React Flow canvas — node palette (action / branch / delay / approval / wait_for_event / end). Custom `AutomationNodeView` with multi-handle source ports, dotted Bone background, hidden RF attribution, MiniMap + Controls, drop-from-palette via HTML5 drag.
+- `[✅]` Node config drawer — per-node form driven by node type (action name + JSON input, delay seconds, approval summary + TTL, branch field/op/value, wait_for_event key) with a live JSON textarea that surfaces parse errors inline; Set-as-start + Delete; label editor.
+- `[✅]` Save draft + publish flow — `frontend-web/lib/workflow-graph.ts` round-trips between `AutomationGraph` and React Flow nodes/edges (positions and label are editor-only keys carried through the JSON); 300ms debounced PATCH on every change with a hash gate to skip no-op writes; Publish button gated on `validateGraph` returning zero issues; status pill + version pointer (`v{N}`) in the header.
 - `[☑️]` "Describe in English" panel — Claude prompt `automations.author_from_nl.v1` returns JSON graph; canvas hydrates.
 - `[☑️]` Undo/redo on canvas edits.
-- `[🏗️]` Schema validator — disconnected nodes, missing required fields, type mismatches between adjacent nodes. *Light validator (`graph.validate` — checks `nodes` object, `start_node_id`, node types) runs on publish; full structural validation pending.*
+- `[🏗️]` Schema validator — light validator on the backend (`graph.validate` — `start_node_id` + `nodes` shape + known node types) runs on publish; full client-side validator in `lib/workflow-graph.ts` now covers disconnected nodes (reachability from start), missing required outgoing edges per node type, missing `action.config.action`, missing `branch.config.field`, and dangling edge targets. Type-mismatch checks between adjacent nodes (e.g. branch field vs action output schema) still pending.
 
 **Acceptance criteria**
-- `[🏗️]` TC-29 (build 4-step workflow — backend publish endpoint + 18 tests; frontend canvas pending), TC-30 (describe-in-English — pending), TC-31 (draft/publish versioning — backend immutability proven; frontend pending), TC-32 (validator blocks malformed graphs — partial: `cancel_run` ships + tested; structural validator pending).
+- `[🏗️]` TC-29 (build 4-step workflow — canvas + palette + drawer + autosave + 18 backend tests shipped; manual UI smoke-test pending toolchain), TC-30 (describe-in-English — pending), TC-31 (draft/publish versioning — backend immutability proven + frontend Publish/Run buttons + status pill + version footer shipped), TC-32 (validator blocks malformed graphs — Publish button is now blocked when `validateGraph` returns any issue; structural rules cover reachability + missing edges + missing per-type config).
+
+**Frontend dependency added**
+- `@xyflow/react ^12.3.5` (~140kb gz, MIT). User-approved via AskUserQuestion ahead of `pnpm install`.
 
 ---
 
@@ -578,6 +581,19 @@ M8 flipped from ☑️ to 🏗️ as the backend portion landed:
 - **Tests.** 18 new: load-bearing `test_in_flight_run_unaffected_by_draft_edit` proves a draft edit can't change a running v1 run's output. Covers TC-29 (publish creates v1), TC-30 (edit + republish → v2 alongside v1), TC-32 (cancel a stuck delay run); plus workspace isolation, invalid-graph rejection, kick_off fallback paths, cancel idempotency.
 
 Remaining for M8: React Flow canvas, node config drawer, describe-in-English panel, undo/redo, full structural validator, HITL HTTP decide endpoint.
+
+### Revision 4 — 2026-05 — M8 canvas slice
+
+M8 frontend canvas landed; M8.S1 flipped from ☑️ to ✅, M8.S2 remains 🏗️ pending the run inspector.
+
+- **Lib.** New `frontend-web/lib/workflow-graph.ts` — `graphToFlow` / `flowToGraph` bidirectional conversion (positions + label carried as editor-only keys the backend round-trips), `generateNodeId`, `nodePreset` defaults per node type, `validateGraph` (reachability from start, missing outgoing edges per node type, missing per-type config, dangling edge targets).
+- **Components.** New `components/workflow-canvas.tsx` (React Flow + ReactFlowProvider, custom `AutomationNodeView` with `true`/`false`, `approve`/`reject`, `next` source handles, dotted Bone background, hidden attribution, MiniMap + Controls, HTML5 drag-from-palette + screenToFlowPosition drop, debounced 300ms autosave with hash gate, inline ValidationOverlay). New `components/workflow-node-palette.tsx` (draggable buttons per node type with brand-tokened cards). New `components/workflow-node-drawer.tsx` (per-node-type forms — action name + JSON input, delay seconds, approval summary + TTL, branch field/op/value, wait_for_event key — with a live JSON textarea that surfaces parse errors inline, Set-as-start, Delete, label editor).
+- **Pages.** New `app/[workspace]/automations/page.tsx` (list page with empty state + brand cards showing version/node-count/last-update + "+ New workflow" creates a draft and routes to the editor). New `app/[workspace]/automations/[id]/page.tsx` (editor shell: workflow-name input with onBlur PATCH, save indicator with bone-rooted color states, Run button calling `start_run` and disabled when no published version, Publish button gated on `validateGraph` issues, status pill, recent-runs footer linking to inspector).
+- **API client.** `lib/api.ts` grew Automation / AutomationVersion / AutomationRun / AutomationStepRun / AutomationGraph / AutomationNode TS types + hooks (`useAutomations`, `useAutomation`, `useCreateAutomation`, `useUpdateAutomation`, `usePublishAutomation`, `useAutomationVersions`, `useStartAutomationRun`, `useAutomationRuns`, `useAutomationRun`, `useCancelAutomationRun`).
+- **Wiring.** Sidebar Automations entry flipped from `comingSoon` to live. Command palette gained an Automations item under Navigate. `globals.css` imports `@xyflow/react/dist/style.css`. `package.json` adds `@xyflow/react ^12.3.5`.
+- **Brand-token fixes.** Caught during the pass: `StatusPillTone "positive"` → `"success"`; nonexistent `clay`/`positive` Tailwind colors replaced with the StatusPill danger/success hexes (`#8E3B30`, `#3B6A4A`) and the `#c98f89` clay hex for the approval node border.
+
+Remaining for M8: run inspector UI (task #4), describe-in-English panel + Claude prompt + telemetry (task #3), HITL HTTP decide endpoint, undo/redo. Manual UI smoke pending `pnpm install && pnpm dev` once the toolchain is up — no `pnpm`/`node` were available on this machine to typecheck the frontend slice.
 
 ---
 

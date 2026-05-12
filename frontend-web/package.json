@@ -19,6 +19,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@tanstack/react-query": "^5.62.0",
+    "@xyflow/react": "^12.3.5",
     "cmdk": "^1.0.4",
     "next": "^15.1.0",
     "react": "^19.0.0",

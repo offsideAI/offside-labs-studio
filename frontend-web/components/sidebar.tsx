@@ -45,8 +45,6 @@ const NAV: NavItem[] = [
     label: "Automations",
     href: (slug) => `/${slug}/automations`,
     match: (pathname, slug) => pathname.startsWith(`/${slug}/automations`),
-    comingSoon: true,
-    badge: "M8",
   },
 ];
 

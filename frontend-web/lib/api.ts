@@ -907,4 +907,240 @@ export const useActivitiesFor = (
       Boolean(workspaceId && relatedType && relatedId) && apiTokens.hasSession(),
   });
 
+// --- M8: Automations (workflow editor + run inspector) ---
+
+export type AutomationStatus = "draft" | "active" | "paused" | "archived";
+
+export type AutomationNodeType =
+  | "action"
+  | "delay"
+  | "approval"
+  | "branch"
+  | "wait_for_event"
+  | "end";
+
+export interface AutomationNode {
+  type: AutomationNodeType;
+  config?: Record<string, unknown>;
+  next?: string;
+  approve_next?: string;
+  reject_next?: string;
+  true_next?: string;
+  false_next?: string;
+  // Editor-only positioning (the backend ignores extra keys).
+  position?: { x: number; y: number };
+  label?: string;
+}
+
+export interface AutomationGraph {
+  start_node_id?: string;
+  nodes?: Record<string, AutomationNode>;
+}
+
+export interface Automation {
+  id: number;
+  name: string;
+  description: string;
+  status: AutomationStatus;
+  trigger: Record<string, unknown>;
+  graph: AutomationGraph;
+  version: number;
+  published_version: number | null;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AutomationVersion {
+  id: number;
+  automation: number;
+  version_number: number;
+  graph: AutomationGraph;
+  trigger: Record<string, unknown>;
+  published_by: number;
+  published_at: string;
+}
+
+export type RunStatus =
+  | "pending"
+  | "running"
+  | "awaiting_approval"
+  | "awaiting_delay"
+  | "awaiting_event"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+export interface AutomationStepRun {
+  id: number;
+  step_id: string;
+  attempt: number;
+  status: "pending" | "running" | "completed" | "failed";
+  started_at: string | null;
+  finished_at: string | null;
+  input: Record<string, unknown>;
+  output: Record<string, unknown>;
+  model: string;
+  cost_cents: number;
+  error: { type?: string; message?: string } | null;
+  idempotency_key: string;
+}
+
+export interface AutomationRun {
+  id: number;
+  automation: number;
+  version: number | null;
+  status: RunStatus;
+  current_step_id: string;
+  trigger_payload: Record<string, unknown>;
+  resume_at: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+  attempt: number;
+  state_snapshot?: Record<string, Record<string, unknown>>;
+  step_runs?: AutomationStepRun[];
+}
+
+export const useAutomations = (workspaceId: number | null | undefined) =>
+  useQuery({
+    queryKey: ["automations", workspaceId],
+    queryFn: () =>
+      fetcher.authFetch<Paginated<Automation>>("/api/automations/", {
+        workspaceId: workspaceId ?? undefined,
+      }),
+    enabled: Boolean(workspaceId) && apiTokens.hasSession(),
+  });
+
+export const useAutomation = (
+  workspaceId: number | null | undefined,
+  automationId: number | string | null | undefined,
+) =>
+  useQuery({
+    queryKey: ["automation", workspaceId, String(automationId)],
+    queryFn: () =>
+      fetcher.authFetch<Automation>(`/api/automations/${automationId}/`, {
+        workspaceId: workspaceId ?? undefined,
+      }),
+    enabled: Boolean(workspaceId && automationId) && apiTokens.hasSession(),
+  });
+
+export const useCreateAutomation = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Partial<Pick<Automation, "name" | "description" | "graph" | "trigger">>) =>
+      fetcher.authFetch<Automation>("/api/automations/", {
+        method: "POST",
+        body: input,
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["automations", workspaceId] }),
+  });
+};
+
+export const useUpdateAutomation = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: number | string; patch: Partial<Automation> }) =>
+      fetcher.authFetch<Automation>(`/api/automations/${input.id}/`, {
+        method: "PATCH",
+        body: input.patch,
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: (auto) => {
+      qc.setQueryData<Automation>(["automation", workspaceId, String(auto.id)], auto);
+      qc.invalidateQueries({ queryKey: ["automations", workspaceId] });
+    },
+  });
+};
+
+export const usePublishAutomation = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number | string) =>
+      fetcher.authFetch<AutomationVersion>(`/api/automations/${id}/publish/`, {
+        method: "POST",
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: (_v, id) => {
+      qc.invalidateQueries({ queryKey: ["automation", workspaceId, String(id)] });
+      qc.invalidateQueries({ queryKey: ["automation-versions", workspaceId, String(id)] });
+      qc.invalidateQueries({ queryKey: ["automations", workspaceId] });
+    },
+  });
+};
+
+export const useAutomationVersions = (
+  workspaceId: number | null | undefined,
+  automationId: number | string | null | undefined,
+) =>
+  useQuery({
+    queryKey: ["automation-versions", workspaceId, String(automationId)],
+    queryFn: () =>
+      fetcher.authFetch<Paginated<AutomationVersion>>(
+        `/api/automations/${automationId}/versions/`,
+        { workspaceId: workspaceId ?? undefined },
+      ),
+    enabled: Boolean(workspaceId && automationId) && apiTokens.hasSession(),
+  });
+
+export const useStartAutomationRun = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: number | string; trigger_payload?: Record<string, unknown> }) =>
+      fetcher.authFetch<AutomationRun>(`/api/automations/${input.id}/start_run/`, {
+        method: "POST",
+        body: { trigger_payload: input.trigger_payload ?? {} },
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: (_run, vars) =>
+      qc.invalidateQueries({
+        queryKey: ["automation-runs", workspaceId, String(vars.id)],
+      }),
+  });
+};
+
+export const useAutomationRuns = (
+  workspaceId: number | null | undefined,
+  automationId: number | string | null | undefined,
+) =>
+  useQuery({
+    queryKey: ["automation-runs", workspaceId, String(automationId)],
+    queryFn: () =>
+      fetcher.authFetch<Paginated<AutomationRun>>(
+        `/api/automation-runs/?automation=${automationId}`,
+        { workspaceId: workspaceId ?? undefined },
+      ),
+    enabled: Boolean(workspaceId && automationId) && apiTokens.hasSession(),
+  });
+
+export const useAutomationRun = (
+  workspaceId: number | null | undefined,
+  runId: number | string | null | undefined,
+) =>
+  useQuery({
+    queryKey: ["automation-run", workspaceId, String(runId)],
+    queryFn: () =>
+      fetcher.authFetch<AutomationRun>(`/api/automation-runs/${runId}/`, {
+        workspaceId: workspaceId ?? undefined,
+      }),
+    enabled: Boolean(workspaceId && runId) && apiTokens.hasSession(),
+  });
+
+export const useCancelAutomationRun = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (runId: number | string) =>
+      fetcher.authFetch<AutomationRun>(`/api/automation-runs/${runId}/cancel/`, {
+        method: "POST",
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: (run) => {
+      qc.setQueryData(["automation-run", workspaceId, String(run.id)], run);
+      qc.invalidateQueries({
+        queryKey: ["automation-runs", workspaceId, String(run.automation)],
+      });
+    },
+  });
+};
+
 export { AuthFetchError };

@@ -1,4 +1,5 @@
 @import "@offside/ui/styles/tokens.css";
+@import "@xyflow/react/dist/style.css";
 
 @tailwind base;
 @tailwind components;
