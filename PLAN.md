@@ -1,16 +1,23 @@
-# Offside CRM — PLAN.md
+# OffsideStudio — Agent Marketplace — PLAN.md
 
-> First product in the Offside Studio Suite. AI-native CRM with deeply integrated workflow automation. This document is the single source of truth for what we are building, how, and in what order.
+> First product in the Offside Studio Suite. **OffsideStudio — Agent Marketplace** is the headline; the Agent Design Studio is its companion surface; the CRM record layer is the data foundation underneath. This document is the single source of truth for what we are building, how, and in what order.
 
-**Status:** Pre-build. Captures interview decisions (Rounds 1–7) and locks the architectural bets for the suite.
+**Status:** Pre-build through M9. Captures interview decisions (Rounds 1–7) and locks the architectural bets for the suite.
 **Owner:** Offside Labs.
-**Last revised:** 2026-05 (revision 2 — DO App Platform deployment, Celery-based workflow engine, flatter monorepo).
+**Last revised:** 2026-05 (revision 3 — repositioning around the OffsideStudio — Agent Marketplace selling proposition; revision 2 — DO App Platform deployment, Celery-based workflow engine, flatter monorepo).
 
 ---
 
 ## 1. Executive summary
 
-We are building **Offside CRM**, the first of four products in the Offside Studio Suite (CRM, Crunch, Design, Director). It is positioned for **SMB sales teams (2–20 reps)** as a complete CRM that fuses a polished record/pipeline experience (HubSpot/Attio lineage) with a workflow automation engine (Zapier/n8n lineage) and pervasive AI. The wedge is **"AI everywhere"** — prompt-first authoring, conversational data access, and agentic-when-allowed action.
+We are building **OffsideStudio — Agent Marketplace**, the first of four products in the Offside Studio Suite (Studio, Crunch, Design, Director). It is positioned for **SMB sales teams (2–20 reps)**. The hero proposition is *"install an agent, customize it, run it against your CRM."*
+
+The product leads with **two prominent surfaces**:
+
+1. **Agents Marketplace** (★★ hero) — a curated, workspace-agnostic catalog of pre-built workflow agents. An admin installs one with a single click; the workflow lands in the workspace as a published, immediately runnable `AutomationVersion`. The Marketplace is the answer to "what is this product?"
+2. **Agent Design Studio** (★ hero) — the visual node-graph canvas + run inspector + describe-in-English authoring surface. Every installed agent opens here for customization; new agents can be authored from a blank canvas or from natural language.
+
+Underneath those two surfaces sits the **CRM data layer** — contacts, companies, deals, pipelines, tasks, notes, activities. The CRM gives the agents something real to act on and gives the demo something credible to show. The CRM core (HubSpot/Attio lineage) and durable workflow runtime (Zapier/n8n lineage; M7 idempotent Celery-backed engine) are the foundations, not the headline.
 
 Each product in the suite shares: design system, auth, AI infra, workflow primitives, API client. Cross-cutting concerns live in `packages/*` from day one so Crunch / Design / Director don't have to be re-platformed later, even though the suite-app placeholders themselves are deferred under the flatter monorepo shape (§11, §14).
 
@@ -22,12 +29,16 @@ The MVP cut is intentionally **ambitious**: full Round-1–3 scope shipped over 
 
 ## 2. Product vision & positioning
 
-> "Make HubSpot's CRM core, Zapier's automation flexibility, and Attio's design polish feel old."
+> "OffsideStudio — Agent Marketplace. Install an agent, customize it in the Design Studio, watch it run against your CRM."
 
-Operating principles (from the brief, locked):
-- **AI-native, not AI-adjacent** — every record view, automation, search, and follow-up is AI-aware. AI drafts, classifies, routes, and (where allowed) acts.
-- **Automation as a peer, not a side panel** — workflows and CRM records share one mental model, one schema language, one event bus.
-- **Web-first** — modern stack, sub-100ms feel. Native iOS is a *peer* surface (Round 6 override), not a port.
+**Default selling proposition (use this exact phrasing across product, marketing, and demo materials):** *"OffsideStudio — Agent Marketplace."*
+
+Operating principles:
+- **Marketplace-first onboarding.** A new admin's first 30 seconds in the product is browsing the Agents Marketplace. The empty state for `/automations` reads "install your first agent." The primary sidebar leads with Marketplace + Studio above Contacts / Companies / Deals.
+- **Design Studio is the second-most-prominent surface.** Installed agents open directly in the Studio. Describe-in-English (FR-12 / M8.S3) is treated as a first-class authoring path.
+- **AI-native, not AI-adjacent.** Every record view, agent, automation step is AI-aware. Cost + latency telemetry is visible.
+- **Agents are a peer to records.** Workflows + CRM records share one mental model, one schema language, one event bus.
+- **Web-first** with native iOS as a peer surface for read/edit + agent approvals on the go.
 - **Opinionated UX** — keyboard-first, command palette, dense-but-calm.
 - **The 80–90% of Zapier** — most-used capabilities with a dramatically better authoring experience, especially around AI steps.
 

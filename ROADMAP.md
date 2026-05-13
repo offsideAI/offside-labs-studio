@@ -1,8 +1,10 @@
-# Offside CRM — Roadmap (ROADMAP.md)
+# OffsideStudio — Agent Marketplace — Roadmap (ROADMAP.md)
 
 > Companion to [PRD.md](./PRD.md) and [PLAN.md](./PLAN.md). Each **phase maps 1:1 to an epic.** Inside an epic, work is broken into user stories (the "what" from a user's view) and engineering tasks (the "how"). Acceptance criteria match the milestone demo defined in PLAN.md §13. Cross-references to PRD `FR-N` / `NFR-N` and TESTING `TC-N` are noted on each phase.
+>
+> **★★ Hero surface — FR-26 — Agents Marketplace** (M9.S4). **★ Hero surface — FR-12 — Agents Design Studio** (M8). All other phases are foundational for these two surfaces.
 
-**Status:** M0–M7 shipped + pushed to `origin/main`. M8 — all three user stories (S1 + S2 + S3) shipped locally. M9 — 4 of 5 v1 trigger types + 3 action-expansion phases shipped locally (13 registered actions); **M9.S4 Agents Marketplace v1 (FR-26) added as demo-critical** — next slice. Other M9 pending: AI-condition trigger, Slack OAuth/action, run-inspector retry counts. Lingering M8 punch-list: HITL HTTP decide endpoint, undo/redo, TC-29..TC-32 frontend smoke-tests.
+**Status:** Product repositioned around **OffsideStudio — Agent Marketplace** (default selling proposition). M0–M7 shipped + pushed to `origin/main`. **M8 — ★ Agents Design Studio v1** — all three user stories (S1 + S2 + S3) shipped locally. M9 — 4 of 5 v1 trigger types + 3 action-expansion phases shipped (13 registered actions); **M9.S4 — ★★ Agents Marketplace v1 (FR-26)** — backend shipped, frontend pending — **demo-critical, hero surface**. Lingering: AI-condition trigger, Slack OAuth/action, run-inspector retry counts, M8 HITL HTTP decide endpoint + undo/redo + TC-29..TC-32 frontend smoke-tests.
 **Owner:** Offside Labs.
 **Last revised:** 2026-05.
 
@@ -240,7 +242,7 @@ Color discipline reminder: every UI surface added in any phase MUST consume `pac
 
 ---
 
-### `[🏗️]` Phase M8 — Workflow node-graph editor v1 (Epic: Visual Authoring)
+### `[🏗️]` Phase M8 — ★ Agents Design Studio v1 (Epic: Visual Authoring · hero surface)
 *Status:* all three user stories shipped — only HITL HTTP decide endpoint, undo/redo, and TC-29..TC-32 frontend smoke-tests remain · *Estimate:* 7 days · *Depends on:* M7 · *Covers:* FR-12 (partial) · *Tests:* TC-29, TC-30, TC-31, TC-32
 
 **User stories**
@@ -267,7 +269,7 @@ Color discipline reminder: every UI surface added in any phase MUST consume `pac
 
 ---
 
-### `[🏗️]` Phase M9 — Workflow engine completeness (Epic: Triggers, Actions, Integrations)
+### `[🏗️]` Phase M9 — Workflow engine completeness + ★★ Agents Marketplace v1 (Epic: Triggers, Actions, Integrations, Marketplace)
 *Status:* in progress — trigger dispatcher + 4 of 5 trigger types (record, webhook, schedule, form) + 3 action-expansion phases (HTTP, loop, full CRM-mutate) shipped; AI-condition trigger + Slack OAuth/action + run-inspector retry counts + **Agents Marketplace v1 (M9.S4 — demo-critical, FR-26)** pending · *Estimate:* 7 → 10 days (M9.S4 adds ~3 days) · *Depends on:* M8 · *Covers:* FR-11 (full), FR-21, FR-22, **FR-26** · *Tests:* TC-39, TC-62–TC-65, TC-83, **TC-92–TC-94**
 
 **User stories**
@@ -712,7 +714,7 @@ No new deps. Tests + manual smoke pending the Docker toolchain.
 
 Remaining for M9.S2: Slack action (depends on M9.S3 OAuth). Remaining for M9 overall: M9.S3 (Slack OAuth + post-message) + AI-condition trigger + run-inspector retry counts.
 
-### Revision 12 — 2026-05 — M9.S4 Agents Marketplace v1 (FR-26) added
+### Revision 12 — 2026-05-13 — M9.S4 Agents Marketplace v1 (FR-26) added
 
 **Demo-critical scope addition.** No code yet — this revision documents the new user story queued for immediate implementation ahead of the conference demo. PRD bumped to v3 (FR-26 added; POST-15 clarified as the third-party-developer successor).
 
@@ -731,6 +733,16 @@ Recommended implementation order for the demo timeline:
 2. **M9.S4 frontend** (~1.5 days).
 3. Optional: **M9.S3 Slack OAuth** (~2 days) if time allows — promotes the Stalled-deal-nudge agent from "HTTP to placeholder URL" to "real Slack post."
 4. Optional polish: M8 HITL HTTP decide endpoint (~0.5 days) so any HITL-using marketplace agent demos cleanly.
+
+### Revision 13 — 2026-05 — M9.S4 backend + product repositioning around OffsideStudio — Agent Marketplace
+
+Two concurrent changes:
+
+1. **M9.S4 Agents Marketplace backend shipped.** New `apps/marketplace` Django app with `MarketplaceAgent` (workspace-agnostic catalog row: slug, name, description, long_description, category enum, icon_emoji, author, graph, trigger, install_count, is_published, audit) + `WorkspaceAgentInstall` (per-workspace audit FKs the freshly-created `Automation`). Migration `0001_initial.py` (depends on `automations.0005_formendpoint`). DRF: `MarketplaceAgentViewSet` — catalog list/detail with `AllowAny` + no auth (catalog is shareable); `install` `@action` is manager-gated, uses `WorkspaceJWTAuthentication`, atomically snapshots the agent's graph + trigger into a new `Automation`, calls `publish_automation` (flips to ACTIVE + creates v1), writes `WorkspaceAgentInstall` audit row, bumps `install_count` via `F("install_count") + 1`. `__INSTALLER__` sentinel resolution in `_resolve_installer_sentinels` replaces every literal occurrence with the installer's user id so seed graphs are portable across workspaces. Wired into `offside_crm/urls.py` at `/api/marketplace/`. Admin registrations for both models. **M7 runtime tweak (additive):** `run_advancer` now seeds `state_snapshot.trigger = trigger_payload` on the PENDING → RUNNING transition so `{{ trigger.<field> }}` templates resolve in action inputs — unblocks the seed agents. `tools/seeds/marketplace.py` ships 4 hand-curated agents using only currently-shipped triggers + actions (Lead qualification 🎯, Welcome new contact 👋, Deal pulse 🔔, Outbound HTTP ping 🔌). 9 tests in `apps/marketplace/tests/test_marketplace.py` cover TC-92 (catalog anon-readable + list/detail/category-filter + unpublished hidden), TC-93 (install round-trip + workspace-header requirement + manager-role gating + `__INSTALLER__` resolution), TC-94 (edit-after-install isolation from catalog + v1 snapshot immutability), plus re-install creates separate Automation rows.
+
+2. **Product repositioning around "OffsideStudio — Agent Marketplace" as default selling proposition.** PRD bumped to v3.1. The Agents Marketplace (FR-26) is now framed as the ★★ headline surface; the Agents Design Studio (FR-12, renamed from "Workflow node-graph editor") is the ★ companion hero. Both surfaces lead the product's UX hierarchy; CRM record views (FR-3..FR-7) become the data layer underneath. PLAN.md / PRD.md / ROADMAP.md / CLAUDE.md / MEMORY.md / TESTING.md all rewritten at the top to use the new positioning. Frontend implementation deliverables (next slice): sidebar leads with Marketplace + Studio; `/automations` empty state pitches the Marketplace; primary navigation reordered.
+
+Remaining for M9.S4: frontend grid + detail + install button + sidebar Marketplace entry + `lib/api.ts` hooks + manual UI smoke. Backend is ready for the frontend to call.
 
 ---
 

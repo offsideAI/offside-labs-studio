@@ -1,9 +1,9 @@
-# Offside CRM — Product Requirements Document (PRD)
+# OffsideStudio — Agent Marketplace — Product Requirements Document (PRD)
 
 > Companion to [PLAN.md](./PLAN.md). PLAN.md captures architecture and engineering decisions; **PRD.md captures product requirements from the user's perspective**. Every functional and non-functional requirement here gets a stable ID (`FR-N`, `NFR-N`) so [ROADMAP.md](./ROADMAP.md) and [TESTING.md](./TESTING.md) can reference them without drift.
 
-**Status:** Draft v2 — checkbox-tracked. M0–M7 shipped; M8 next.
-**Product:** Offside CRM (suite product #1 of 4).
+**Status:** Draft v3 — checkbox-tracked. M0–M7 shipped; M8 (Agent Design Studio v1) + M9 (engine completeness + Agents Marketplace v1) in progress.
+**Product:** **OffsideStudio — Agent Marketplace** (default selling proposition). Underlying record/pipeline data lives in the Offside CRM data layer; the user-facing surfaces are the **Agents Marketplace** (browse + install pre-built agents) and the **Agent Design Studio** (visually design, customize, observe).
 **Owner:** Offside Labs.
 **Last revised:** 2026-05.
 
@@ -21,24 +21,32 @@ Each FR / NFR / POST has a rollup status; user stories and acceptance criteria e
 
 ## 1. Executive summary
 
-Offside CRM is the first product in the Offside Studio Suite, positioned for **SMB sales teams (2–20 reps)**. It fuses a polished record/pipeline experience (HubSpot/Attio lineage), a workflow automation engine (Zapier/n8n lineage), and pervasive AI — under a single coherent UX where AI is a first-class primitive, not a side panel.
+**OffsideStudio — Agent Marketplace** is the first product in the Offside Studio Suite, positioned for **SMB sales teams (2–20 reps)**. The product's hero proposition is *"install an agent, customize it, run it against your CRM."* Two surfaces lead the experience:
 
-The wedge is **"AI everywhere"**: prompt-first workflow authoring on top of a node-graph canvas, conversational data access, comms intelligence on every record, and opt-in autonomous agentic action with human-in-the-loop approval.
+- **Agents Marketplace** (FR-26): a curated, workspace-agnostic catalog of pre-built workflow agents that an admin can install with one click. Installation creates an immediately editable, immediately runnable workflow in the workspace.
+- **Agent Design Studio** (FR-12): the visual canvas + run-inspector + describe-in-English surface where admins design, customize, and observe their agents.
+
+Underneath these two surfaces sits a polished CRM data layer — contacts, companies, deals, pipelines, tasks, notes, activities — that gives the agents something real to act on. The CRM core (HubSpot/Attio lineage) and durable workflow runtime (Zapier/n8n lineage with M7's idempotent Celery-backed engine) are the foundations; the **Marketplace + Studio are the headline**.
+
+The wedge is **"agents you can ship by Tuesday."** Pre-built agents for the obvious sales workflows, a no-code design studio for the bespoke ones, an AI authoring layer that translates English into a runnable graph, and a record/activity layer that makes the whole thing demoable on real data from day one.
 
 ---
 
 ## 2. Vision & positioning
 
-> "Make HubSpot's CRM core, Zapier's automation flexibility, and Attio's design polish feel old."
+> "OffsideStudio — Agent Marketplace. Install an agent, customize it in the Design Studio, watch it run against your CRM."
+
+**Selling proposition (use this exact phrasing throughout the product, marketing, and demo materials):** *"OffsideStudio — Agent Marketplace."*
 
 Operating principles:
-- **AI-native, not AI-adjacent.** Every record view, automation, search, and follow-up is AI-aware.
-- **Automation as a peer, not a side panel.** Workflows and CRM records share one mental model and one event bus.
+- **Marketplace-first onboarding.** A new admin's first 30 seconds in the product should be browsing the Agents Marketplace. The empty state for `/automations` invites the user to "install your first agent." The CRM record views surface "agents that work on this record."
+- **Design Studio is the second-most-prominent surface.** Every installed agent opens directly in the Studio. Describe-in-English (FR-12 / M8.S3) is treated as a first-class authoring path alongside drag-from-palette.
+- **AI-native, not AI-adjacent.** Every record view, every agent, every automation step is AI-aware. Cost + latency telemetry is visible to the user.
+- **Agents are a peer to records.** Workflows + CRM records share one mental model and one event bus.
 - **Web-first** with native iOS as a peer surface for read/edit + agent approvals on the go.
-- **Opinionated UX.** Keyboard-first, command-palette-everywhere, dense-but-calm.
-- **The 80–90% of Zapier's automation power**, with a dramatically better authoring experience for AI steps.
+- **Opinionated UX.** Keyboard-first, command-palette-everywhere, dense-but-calm. Marketplace + Studio sit in the primary nav above Contacts / Companies / Deals.
 
-Suite positioning: every Offside product (CRM, Crunch, Design, Director) shares voice, brand, and shared infrastructure. Offside is engineer-to-engineer — confident, technical, never breathless.
+Suite positioning: every Offside product (Studio, Crunch, Design, Director) shares voice, brand, and shared infrastructure. Offside is engineer-to-engineer — confident, technical, never breathless.
 
 ---
 
@@ -190,17 +198,22 @@ Every FR has: **Status** · **ID** · **Priority** (P0 = MVP, P1 = post-MVP) · 
   - `[✅]` HITL approval token signed and single-use; expires in 7 days. *(M7 hitl.py)*
   - `[✅]` Run inspector shows step-by-step input/output/cost/latency. *(M7 Django admin)*
 
-### `[☑️]` FR-12 — Workflow node-graph editor (PLAN §7.2)
-- **Priority:** P0 · **Personas:** P-1, P-3 · **Roadmap:** M8 (☑️)
-- **Description:** Pure node-graph canvas (React Flow) with node palette. Optional "Describe in English" panel that hydrates a graph from natural language.
+### `[🏗️]` FR-12 — Agent Design Studio ★ hero surface (PLAN §7.2, ROADMAP M8)
+- **Priority:** P0 (hero) · **Personas:** P-1, P-3 · **Roadmap:** M8 (🏗️) canvas + run inspector + versions + describe-in-English shipped; HITL HTTP decide endpoint + undo/redo + type-mismatch validator pending
+- **Description:** **The Agent Design Studio is the second of OffsideStudio's two hero surfaces** (the first is FR-26 Agents Marketplace). It is the visual authoring + observation environment for every agent in the workspace — whether the agent was installed from the Marketplace, authored from scratch on the canvas, or generated by describing it in English to Claude. The Studio combines: a React-Flow node-graph canvas with a draggable node palette and a per-node config drawer; a Versions panel listing every published `AutomationVersion`; a per-run Inspector surfacing step inputs / outputs / cost / latency / idempotency keys; and the **Describe-in-English** Claude prompt (`automations.author_from_nl.v1`) that proposes a graph from natural language with a review-before-save gate.
+- **Naming note:** formerly referred to as "Workflow node-graph editor" in the v1/v2 PRD. Renamed to **Agent Design Studio** in PRD v3 to reflect its promoted status as a hero surface in the **OffsideStudio — Agent Marketplace** positioning.
 - **User stories:**
-  - `[☑️]` As an admin, I can drag nodes onto the canvas and connect them with edges.
-  - `[☑️]` As an admin, I can save a draft and publish it as a new version.
-  - `[☑️]` As an admin, I can describe a workflow in English and let Claude generate the node graph.
+  - `[✅]` As an admin, I can drag nodes onto the canvas and connect them with edges. *(M8.S1)*
+  - `[✅]` As an admin, I can save a draft and publish it as a new immutable version. *(M8.S2)*
+  - `[✅]` As an admin, I can describe a workflow in English and let Claude generate the node graph. *(M8.S3)*
+  - `[✅]` As an admin, I can inspect every step of a run with input / output / cost / latency / idempotency_key visible. *(M8.S2 inspector)*
+  - `[✅]` As an admin, I can install an agent from the Marketplace and the Studio opens with that agent already published and ready to edit. *(FR-26 / M9.S4)*
+  - `[☑️]` As an admin, I can undo/redo canvas edits. *(M8 punch-list)*
 - **Acceptance criteria:**
-  - `[☑️]` Canvas renders 100-node workflows without jank.
+  - `[🏗️]` Canvas renders 100-node workflows without jank.
   - `[☑️]` Undo/redo for canvas edits.
-  - `[☑️]` Schema validation prevents publishing a malformed graph.
+  - `[🏗️]` Schema validation prevents publishing a malformed graph. *(Client-side validator covers reachability + missing edges + missing per-type config; type-mismatch checks between adjacent nodes pending.)*
+  - `[✅]` Marketplace installs land in the Studio with v1 already published.
 
 ### `[☑️]` FR-13 — AI: comms intelligence (PLAN §8.4)
 - **Priority:** P0 · **Personas:** P-2 · **Roadmap:** M11 (☑️)
@@ -339,9 +352,10 @@ Every FR has: **Status** · **ID** · **Priority** (P0 = MVP, P1 = post-MVP) · 
 
 ---
 
-### `[☑️]` FR-26 — Agents Marketplace v1 (PLAN §7, ROADMAP M9.S4)
-- **Priority:** P0 (demo-critical) · **Personas:** P-1, P-3 · **Roadmap:** M9.S4 (☑️) catalog + one-click install + 4–6 seeded agents
-- **Description:** A workspace-agnostic catalog of pre-built workflow agents (e.g., *Lead qualification*, *Deal hygiene sweep*, *Email follow-up sequence*, *Stalled-deal nudge*, *Inbound webhook → contact*). An admin browses the catalog, previews an agent's node graph, and installs it into their workspace with one click. Installation creates a brand-new `Automation` row in the workspace, snapshots the marketplace agent's graph into a published `AutomationVersion`, and immediately routes the user into the M8 canvas so the workflow is editable from second one. The marketplace is the demo-day "wow" surface — admins go from "blank canvas" to "running workflow" in seconds without authoring anything by hand. v1 catalog is hand-curated and seeded via a fixture; curator submission flow is FR-26.S4 (v2 placeholder).
+### `[🏗️]` FR-26 — Agents Marketplace ★★ hero surface (PLAN §7, ROADMAP M9.S4)
+- **Priority:** P0 (the headline of the product) · **Personas:** P-1, P-3 · **Roadmap:** M9.S4 (🏗️) backend + seed + tests shipped; frontend grid + detail + install button pending
+- **Description:** **The Agents Marketplace is the headline surface of OffsideStudio.** It is the first place a new admin lands; it is the answer to "what is this product?"; it is the demo opener. The Marketplace is a curated, workspace-agnostic catalog of pre-built workflow agents (*Lead qualification*, *Welcome new contact*, *Deal pulse*, *Outbound HTTP ping*, with more in the roadmap). An admin browses the catalog, previews an agent's node graph, and installs it into their workspace with **one click**. Installation creates a brand-new `Automation` row in the workspace, snapshots the marketplace agent's graph + trigger into an immutable published `AutomationVersion`, sets the workflow to `ACTIVE`, and routes the user directly into the Agent Design Studio (FR-12) so the workflow is editable from second one. The Marketplace is the "blank-canvas → running workflow in 10 seconds" surface; the Design Studio is the "now customize it to your team" surface. The two pair tightly and lead the product's UX hierarchy.
+- **Selling proposition usage:** "OffsideStudio — Agent Marketplace" is the default product selling proposition. The Marketplace surface is what the phrase points at. Use the phrase in the empty state for `/automations`, in the welcome onboarding, in the marketing site copy, and in the demo opening line.
 - **Distinct from POST-15** (third-party developer marketplace + extensions, out-of-MVP): FR-26 is a curated, internal-only catalog of workflow templates. POST-15 expands this with developer onboarding, monetization, and signed extensions.
 - **User stories:**
   - `[☑️]` F26.S1 — As an admin, I can browse the marketplace catalog of pre-built agents with category filter + preview of the node graph.
@@ -527,6 +541,7 @@ NFRs are quality bars rather than discrete deliverables. Most are partially in p
 - **v1 — 2026-05** — initial PRD shipped alongside PLAN.md / TESTING.md / ROADMAP.md.
 - **v2 — 2026-05** — added `[✅]/[🏗️]/[☑️]` status checkboxes on every FR / NFR / user story / acceptance criterion. Added "Roadmap mapping" lines so each requirement points at the milestone(s) that ship it. Aligned with ROADMAP.md Revision 2 (M0–M7 complete).
 - **v3 — 2026-05** — added **FR-26 — Agents Marketplace v1** (P0, demo-critical) covering a workspace-agnostic curated catalog + one-click install + 4–6 seeded agents, mapped to ROADMAP M9.S4. Clarified POST-15 as the third-party developer marketplace successor to distinguish it from FR-26.
+- **v3.1 — 2026-05** — **Repositioned the entire product around "OffsideStudio — Agent Marketplace"** as the default selling proposition. Executive summary + vision rewritten to lead with the Marketplace + Design Studio hero pairing. **FR-12 renamed** from "Workflow node-graph editor" to **"Agent Design Studio"** (★ hero surface). **FR-26 promoted** to **★★ hero surface** with explicit "the headline of the product" framing. CRM record/pipeline experience repositioned as the underlying data layer that the agents act on, rather than as the primary surface. Companion edits to PLAN.md, ROADMAP.md, CLAUDE.md, MEMORY.md, TESTING.md.
 
 ---
 

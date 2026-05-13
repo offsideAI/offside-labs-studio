@@ -2,7 +2,9 @@
 
 > Instructions for Claude Code (and humans new to the repo) working in the Offside Studio Suite monorepo. **Read this first.**
 
-This is the Offside Studio Suite monorepo. **Offside CRM** is product #1 of 4 (Crunch / Design / Director follow). Stay grounded in the source-of-truth docs before acting.
+This is the Offside Studio Suite monorepo. The first product, **OffsideStudio — Agent Marketplace**, is product #1 of 4 (Crunch / Design / Director follow). Stay grounded in the source-of-truth docs before acting.
+
+**Default selling proposition:** *"OffsideStudio — Agent Marketplace."* Use this phrase verbatim in user-facing copy (empty states, marketing site, demo opener). The product leads with two hero surfaces — the **Agents Marketplace** (★★ FR-26 / M9.S4) and the **Agents Design Studio** (★ FR-12 / M8) — both above the CRM record views in the primary navigation. CRM records are the data layer the agents act on, not the headline.
 
 ## Read these in order
 
@@ -15,7 +17,8 @@ This is the Offside Studio Suite monorepo. **Offside CRM** is product #1 of 4 (C
 ## Current milestone progress
 
 - **Shipped on `main`:** M0 (scaffold) · M1 (auth) · M2 (workspaces) · M3 (cmd-K shell) · M4 (records + CSV import) · M5 (deals + tasks + notes + activities) · M6 (iOS read-only shell) · M7 (durable workflow runtime).
-- **Next up:** **M8 — workflow node-graph editor (React Flow)** with describe-in-English Claude prompt. Maps to TC-29..TC-32.
+- **Shipped locally** (awaiting commits): **M8 — ★ Agents Design Studio v1** (canvas + versions + run inspector + describe-in-English); **M9** triggers (record/webhook/schedule/form) + actions (HTTP/loop/CRM-mutate) + **M9.S4 ★★ Agents Marketplace backend**.
+- **Next up:** **M9.S4 Agents Marketplace frontend** (grid + detail + install button) — the demo headline. Then optional M9.S3 Slack OAuth + the M8 HITL HTTP decide endpoint.
 - **Status checkbox legend (PRD.md + ROADMAP.md):** `[✅]` implemented · `[🏗️]` partially implemented · `[☑️]` pending. Keep PRD and ROADMAP checkboxes synced when you complete or partially deliver a piece of work.
 
 ## Stack at a glance
