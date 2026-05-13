@@ -131,7 +131,7 @@ export default function HomePage() {
               <span className="text-xl">🤖</span>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-white">Multi-channel Sales Orchestrator</span>
-                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">OpenClaw</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">OffsideAI</span>
               </div>
             </div>
 
@@ -139,7 +139,7 @@ export default function HomePage() {
               <span className="text-xl">🧠</span>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-white">Predictive Lead Researcher</span>
-                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">Hermes</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">OffsideAI</span>
               </div>
             </div>
 
@@ -147,7 +147,7 @@ export default function HomePage() {
               <span className="text-xl">🎫</span>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-white">Omnichannel Support Router</span>
-                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">OpenClaw</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">OffsideAI</span>
               </div>
             </div>
 
@@ -155,7 +155,7 @@ export default function HomePage() {
               <span className="text-xl">✍️</span>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-white">Iterative SEO Content Engine</span>
-                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">Hermes</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">OffsideAI</span>
               </div>
             </div>
 
@@ -173,7 +173,7 @@ export default function HomePage() {
               <span className="text-xl">🤖</span>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-white">Multi-channel Sales Orchestrator</span>
-                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">OpenClaw</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">OffsideAI</span>
               </div>
             </div>
 
@@ -181,7 +181,7 @@ export default function HomePage() {
               <span className="text-xl">🧠</span>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-white">Predictive Lead Researcher</span>
-                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">Hermes</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">OffsideAI</span>
               </div>
             </div>
 
@@ -189,7 +189,7 @@ export default function HomePage() {
               <span className="text-xl">🎫</span>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-white">Omnichannel Support Router</span>
-                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">OpenClaw</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">OffsideAI</span>
               </div>
             </div>
 
@@ -197,7 +197,7 @@ export default function HomePage() {
               <span className="text-xl">✍️</span>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-white">Iterative SEO Content Engine</span>
-                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">Hermes</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">OffsideAI</span>
               </div>
             </div>
 
@@ -223,7 +223,7 @@ export default function HomePage() {
                 Durable, long-running agents as code
               </h2>
               <p className="text-gray-400 text-lg leading-relaxed max-w-lg">
-                Build complex, stateful agentic workflows using our TypeScript SDK powered by OpenClaw and Hermes. No need to wire up queues or retry logic.
+                Build complex, stateful agentic workflows using our TypeScript SDK powered by OffsideAI. No need to wire up queues or retry logic.
               </p>
               <Link href="/docs/sdk" className="inline-flex items-center text-render-purpleLight hover:text-white transition-colors font-medium text-sm gap-1 group">
                 SDK docs <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
@@ -297,7 +297,7 @@ export default function HomePage() {
                 {/* Node 2 */}
                 <div className="bg-[#141414] border border-render-purple rounded-sm p-3 w-56 relative z-10 ml-32 mt-4 shadow-[0_0_15px_rgba(155,81,224,0.2)]">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-white flex items-center gap-2">🧠 Hermes LLM</span>
+                    <span className="text-xs font-semibold text-white flex items-center gap-2">🧠 OffsideAI LLM</span>
                   </div>
                   <div className="text-[10px] text-gray-400 bg-black p-1.5 rounded-sm border border-gray-800">
                     &quot;Extract company name and budget from this payload...&quot;
@@ -490,13 +490,13 @@ export default function HomePage() {
                   <span className="shrink-0 w-32">Sept 10 18:58:02 PM</span>
                   <span className="w-4 h-4 rounded-full bg-render-purple/20 flex items-center justify-center shrink-0 mt-0.5"><span className="w-1.5 h-1.5 rounded-full bg-render-purpleLight" /></span>
                   <span className="text-gray-300">INFO</span>
-                  <span className="truncate">[Hermes] Re-prompting LLM for schema alignment</span>
+                  <span className="truncate">[OffsideAI] Re-prompting LLM for schema alignment</span>
                 </div>
                 <div className="flex items-start gap-4 text-gray-400">
                   <span className="shrink-0 w-32">Sept 10 18:58:03 PM</span>
                   <span className="w-4 h-4 rounded-full bg-render-green/20 flex items-center justify-center shrink-0 mt-0.5"><span className="w-1.5 h-1.5 rounded-full bg-render-green" /></span>
                   <span className="text-gray-300">EXEC</span>
-                  <span className="truncate">[OpenClaw] Webhook triggered from Salesforce</span>
+                  <span className="truncate">[OffsideAI] Webhook triggered from Salesforce</span>
                 </div>
                 <div className="flex items-start gap-4 text-gray-400">
                   <span className="shrink-0 w-32">Sept 10 18:58:05 PM</span>
@@ -609,7 +609,10 @@ export default function HomePage() {
 
           {/* Bottom Bar */}
           <div className="border-t border-gray-800 pt-8 flex items-center justify-between text-xs text-gray-500">
-            <p>© {new Date().getFullYear()} Offside Labs Inc.</p>
+            <div className="flex items-center gap-4">
+              <p>© {new Date().getFullYear()} Offside Labs Inc.</p>
+              <p>Powered by <a href="https://www.offside.ai" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline">Offside.AI</a></p>
+            </div>
             <button className="text-gray-400 hover:text-white transition-colors" aria-label="Toggle dark mode">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
             </button>
