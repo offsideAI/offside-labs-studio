@@ -247,6 +247,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "automations.wake_up_sweep",
         "schedule": 60.0,  # seconds
     },
+    "automations.scan_schedule_triggers": {
+        "task": "automations.scan_schedule_triggers",
+        "schedule": 60.0,
+    },
 }
 
 # --- CORS ---

@@ -310,6 +310,65 @@ class WebhookEndpoint(models.Model):
         return f"webhook {self.token[:8]}… → automation #{self.automation_id}"
 
 
+class ScheduleTrigger(models.Model):
+    """Cron-driven trigger that fires a specific automation (M9.S1).
+
+    The Beat scan task `automations.scan_schedule_triggers` runs every
+    60 seconds, walks active rows, and uses `celery.schedules.crontab`
+    to ask "is this due right now given last_fired_at?". Due rows
+    `run_automation_with_payload(automation, trigger_type="schedule")`
+    and stamp `last_fired_at`.
+
+    Cron format: standard 5-field — `<minute> <hour> <day_of_month>
+    <month> <day_of_week>`. Examples: "0 9 * * MON" (Mondays 9am UTC),
+    "*/15 * * * *" (every 15 minutes).
+
+    `last_fired_at` is set on every scan that evaluates the trigger,
+    even if no run is created (paused automation, no published
+    version) — this prevents backlog firing when an automation is
+    re-activated.
+    """
+
+    workspace = models.ForeignKey(
+        "workspaces.Workspace",
+        on_delete=models.CASCADE,
+        related_name="schedule_triggers",
+    )
+    automation = models.ForeignKey(
+        Automation,
+        on_delete=models.CASCADE,
+        related_name="schedule_triggers",
+    )
+
+    cron_expression = models.CharField(max_length=128)
+    timezone_name = models.CharField(max_length=64, default="UTC")
+    label = models.CharField(max_length=120, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    last_fired_at = models.DateTimeField(null=True, blank=True)
+    fire_count = models.IntegerField(default=0)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="schedule_triggers_created",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = WorkspaceScopedManager()
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["is_active", "last_fired_at"]),
+            models.Index(fields=["workspace", "is_active"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"schedule[{self.cron_expression}] → automation #{self.automation_id}"
+
+
 class AgentPolicy(models.Model):
     """Per-workspace action-mode mapping (PLAN.md §8.5)."""
 

@@ -37,6 +37,7 @@ from .models import (
     HitlRequest,
     PARKED_STATUSES,
     RunStatus,
+    ScheduleTrigger,
     StepRunStatus,
     TERMINAL_STATUSES,
 )
@@ -252,6 +253,71 @@ def wake_up_sweep() -> int:
     return woken
 
 
+@shared_task(name="automations.scan_schedule_triggers")
+def scan_schedule_triggers() -> int:
+    """Walk active ScheduleTrigger rows and fire any whose cron is due.
+
+    Runs on the Beat ticker every 60 seconds (see
+    `CELERY_BEAT_SCHEDULE` in `offside_crm.settings.base`). Returns
+    the count of triggers evaluated as "due now" — useful for
+    telemetry. Note: due triggers stamp `last_fired_at` and bump
+    `fire_count` even when the bound automation is paused / has no
+    published version, to avoid backlog firing when it un-pauses.
+    """
+    from celery.schedules import crontab as _crontab
+
+    triggers = list(
+        ScheduleTrigger.objects.filter(is_active=True).select_related("automation")
+    )
+    if not triggers:
+        return 0
+
+    fired = 0
+    for trigger in triggers:
+        try:
+            parts = trigger.cron_expression.strip().split()
+            if len(parts) != 5:
+                raise ValueError(f"cron must have 5 fields, got {len(parts)}")
+            cron = _crontab(
+                minute=parts[0],
+                hour=parts[1],
+                day_of_month=parts[2],
+                month_of_year=parts[3],
+                day_of_week=parts[4],
+            )
+        except Exception as exc:  # noqa: BLE001 — bad crons must not poison the sweep
+            log.warning(
+                "scan_schedule_triggers: invalid cron on trigger %s: %s",
+                trigger.pk,
+                exc,
+            )
+            continue
+
+        # If the trigger has never fired, anchor "last" to 60s ago so the
+        # first sweep after creation evaluates whether the cron just hit.
+        anchor = trigger.last_fired_at or (timezone.now() - timedelta(seconds=61))
+        is_due, _next = cron.is_due(anchor)
+        if not is_due:
+            continue
+
+        from .triggers import run_automation_with_payload
+
+        run_automation_with_payload(
+            trigger.automation,
+            trigger_type="schedule",
+            payload={
+                "schedule_trigger_id": trigger.pk,
+                "cron": trigger.cron_expression,
+            },
+        )
+        ScheduleTrigger.objects.filter(pk=trigger.pk).update(
+            last_fired_at=timezone.now(),
+            fire_count=trigger.fire_count + 1,
+        )
+        fired += 1
+    return fired
+
+
 def kick_off(run: AutomationRun) -> AutomationRun:
     """Mark a run as PENDING, attach the published version, enqueue the advancer.
 
@@ -349,6 +415,7 @@ def resume_after_hitl(*, run_id: int, decision: str) -> str:
 __all__ = [
     "run_advancer",
     "wake_up_sweep",
+    "scan_schedule_triggers",
     "kick_off",
     "resume_after_hitl",
     "publish_automation",

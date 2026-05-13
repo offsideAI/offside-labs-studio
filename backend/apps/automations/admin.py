@@ -16,6 +16,7 @@ from .models import (
     AutomationStepRun,
     AutomationVersion,
     HitlRequest,
+    ScheduleTrigger,
     WebhookEndpoint,
 )
 
@@ -150,6 +151,29 @@ class WebhookEndpointAdmin(admin.ModelAdmin):
     list_filter = ("is_active",)
     search_fields = ("token", "label", "workspace__slug", "automation__name")
     readonly_fields = ("token", "secret", "fire_count", "last_fired_at", "created_at")
+    autocomplete_fields = ("workspace", "automation", "created_by")
+
+
+@admin.register(ScheduleTrigger)
+class ScheduleTriggerAdmin(admin.ModelAdmin):
+    list_display = (
+        "cron_expression",
+        "label",
+        "automation",
+        "workspace",
+        "is_active",
+        "fire_count",
+        "last_fired_at",
+        "created_at",
+    )
+    list_filter = ("is_active",)
+    search_fields = (
+        "cron_expression",
+        "label",
+        "workspace__slug",
+        "automation__name",
+    )
+    readonly_fields = ("fire_count", "last_fired_at", "created_at", "updated_at")
     autocomplete_fields = ("workspace", "automation", "created_by")
 
 
