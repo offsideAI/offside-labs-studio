@@ -59,6 +59,7 @@ LOCAL_APPS = [
     "apps.activities",
     "apps.automations",
     "apps.ai",
+    "apps.marketplace",
     "apps.health",
     # M6+ adds: apps.integrations, apps.agents
 ]

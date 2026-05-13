@@ -339,6 +339,25 @@ Every FR has: **Status** · **ID** · **Priority** (P0 = MVP, P1 = post-MVP) · 
 
 ---
 
+### `[☑️]` FR-26 — Agents Marketplace v1 (PLAN §7, ROADMAP M9.S4)
+- **Priority:** P0 (demo-critical) · **Personas:** P-1, P-3 · **Roadmap:** M9.S4 (☑️) catalog + one-click install + 4–6 seeded agents
+- **Description:** A workspace-agnostic catalog of pre-built workflow agents (e.g., *Lead qualification*, *Deal hygiene sweep*, *Email follow-up sequence*, *Stalled-deal nudge*, *Inbound webhook → contact*). An admin browses the catalog, previews an agent's node graph, and installs it into their workspace with one click. Installation creates a brand-new `Automation` row in the workspace, snapshots the marketplace agent's graph into a published `AutomationVersion`, and immediately routes the user into the M8 canvas so the workflow is editable from second one. The marketplace is the demo-day "wow" surface — admins go from "blank canvas" to "running workflow" in seconds without authoring anything by hand. v1 catalog is hand-curated and seeded via a fixture; curator submission flow is FR-26.S4 (v2 placeholder).
+- **Distinct from POST-15** (third-party developer marketplace + extensions, out-of-MVP): FR-26 is a curated, internal-only catalog of workflow templates. POST-15 expands this with developer onboarding, monetization, and signed extensions.
+- **User stories:**
+  - `[☑️]` F26.S1 — As an admin, I can browse the marketplace catalog of pre-built agents with category filter + preview of the node graph.
+  - `[☑️]` F26.S2 — As an admin, I can install an agent into my workspace with one click and the new workflow opens in the canvas as a published version I can edit.
+  - `[☑️]` F26.S3 — As an admin, I can see which marketplace agents are already installed in my workspace (install_count + per-workspace `WorkspaceAgentInstall` rows).
+  - `[☑️]` F26.S4 — *(v2 placeholder)* As an internal curator, I can submit + version-publish agents to the catalog via Django admin or a dedicated tool. v1 seeds via `tools/seeds/marketplace.py`.
+- **Acceptance criteria:**
+  - `[☑️]` Public catalog endpoint `GET /api/marketplace/agents/` returns curated agents with metadata (name, slug, description, category, icon_emoji, install_count) — workspace-agnostic, no auth required so the marketplace is shareable.
+  - `[☑️]` Install endpoint `POST /api/marketplace/agents/{slug}/install/` (workspace-scoped, manager-gated) creates an `Automation` in the requesting workspace, snapshots the agent's graph + trigger into a new `AutomationVersion`, points `automation.published_version` at it, and sets `automation.status = ACTIVE`. Records a `WorkspaceAgentInstall` audit row.
+  - `[☑️]` Installed agents are immediately editable + republishable from the M8 canvas — no "managed/installed" lock-down. The agent is a starting point.
+  - `[☑️]` 4–6 seeded agents span variety: record trigger + log/Slack notify, schedule + email-summary, webhook + CRM mutate, branch + approval HITL, loop over a list. Each seed agent uses only the currently-shipped action types.
+  - `[☑️]` Workspace isolation: install rows scope per workspace; the catalog itself is global.
+  - `[☑️]` TC-92..TC-94 cover catalog list (anon-readable), install round-trip (manager-only + published version created), edit-after-install (changes don't propagate back to the catalog).
+
+---
+
 ## 5. Non-functional requirements
 
 NFRs are quality bars rather than discrete deliverables. Most are partially in place from day one and tighten as the project matures; M15 polish formalizes the CI gates.
@@ -479,8 +498,8 @@ NFRs are quality bars rather than discrete deliverables. Most are partially in p
 ### `[☑️]` POST-14 — Public API + developer portal
 - Rate-limited per-workspace API tokens, public OpenAPI spec, sample SDKs, developer docs site.
 
-### `[☑️]` POST-15 — Marketplace + extensions
-- Custom workflow nodes contributed by partners, workspace-installable AI prompts, branded automation templates.
+### `[☑️]` POST-15 — Third-party developer marketplace + extensions
+- Successor to FR-26's curated catalog: third-party developer onboarding, monetization, signed extensions (custom workflow nodes contributed by partners, workspace-installable AI prompts, branded automation templates from agencies). FR-26 ships the v1 curated catalog; POST-15 opens it up.
 
 ---
 
@@ -507,6 +526,7 @@ NFRs are quality bars rather than discrete deliverables. Most are partially in p
 
 - **v1 — 2026-05** — initial PRD shipped alongside PLAN.md / TESTING.md / ROADMAP.md.
 - **v2 — 2026-05** — added `[✅]/[🏗️]/[☑️]` status checkboxes on every FR / NFR / user story / acceptance criterion. Added "Roadmap mapping" lines so each requirement points at the milestone(s) that ship it. Aligned with ROADMAP.md Revision 2 (M0–M7 complete).
+- **v3 — 2026-05** — added **FR-26 — Agents Marketplace v1** (P0, demo-critical) covering a workspace-agnostic curated catalog + one-click install + 4–6 seeded agents, mapped to ROADMAP M9.S4. Clarified POST-15 as the third-party developer marketplace successor to distinguish it from FR-26.
 
 ---
 

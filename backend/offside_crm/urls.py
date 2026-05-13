@@ -26,6 +26,8 @@ urlpatterns = [
     path("api/", include("apps.activities.urls")),
     # Workflow editor + run inspector (M8).
     path("api/", include("apps.automations.urls")),
+    # Agents Marketplace (M9.S4).
+    path("api/", include("apps.marketplace.urls")),
     # OpenAPI schema + Swagger UI. SCHEMA is publicly servable (SERVE_PERMISSIONS in
     # SPECTACULAR_SETTINGS) so codegen works without auth.
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

@@ -66,10 +66,17 @@ def run_advancer(self, run_id: int) -> str:  # type: ignore[no-untyped-def]
         if run.status not in (RunStatus.PENDING, RunStatus.RUNNING):
             return run.status
 
-        # Transition PENDING → RUNNING on first advance.
+        # Transition PENDING → RUNNING on first advance. Seed the
+        # state_snapshot with `{trigger: trigger_payload}` so step input
+        # templates can resolve `{{ trigger.<field> }}` (added in
+        # M9.S1 / M9.S4 for record + marketplace agents).
         if run.status == RunStatus.PENDING:
             run.status = RunStatus.RUNNING
             run.started_at = run.started_at or timezone.now()
+            if "trigger" not in (run.state_snapshot or {}):
+                state = dict(run.state_snapshot or {})
+                state["trigger"] = run.trigger_payload or {}
+                run.state_snapshot = state
 
         # Capture the Celery task id for traceability.
         run.advancer_task_id = (self.request.id or "")[:64]
