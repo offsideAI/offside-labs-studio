@@ -2,7 +2,7 @@
 
 > Companion to [PRD.md](./PRD.md) and [PLAN.md](./PLAN.md). Each **phase maps 1:1 to an epic.** Inside an epic, work is broken into user stories (the "what" from a user's view) and engineering tasks (the "how"). Acceptance criteria match the milestone demo defined in PLAN.md §13. Cross-references to PRD `FR-N` / `NFR-N` and TESTING `TC-N` are noted on each phase.
 
-**Status:** M0–M7 shipped + pushed to `origin/main`. M8 — all three user stories (S1 + S2 + S3) shipped locally. M9 — trigger dispatcher + record trigger + webhook trigger shipped locally; schedule/form/AI-condition + action expansion + Slack pending. Lingering M8 punch-list: HITL HTTP decide endpoint, undo/redo, TC-29..TC-32 frontend smoke-tests.
+**Status:** M0–M7 shipped + pushed to `origin/main`. M8 — all three user stories (S1 + S2 + S3) shipped locally. M9 — trigger dispatcher + record + webhook + schedule triggers shipped locally; form / AI condition + action expansion + Slack pending. Lingering M8 punch-list: HITL HTTP decide endpoint, undo/redo, TC-29..TC-32 frontend smoke-tests.
 **Owner:** Offside Labs.
 **Last revised:** 2026-05.
 
@@ -268,15 +268,15 @@ Color discipline reminder: every UI surface added in any phase MUST consume `pac
 ---
 
 ### `[🏗️]` Phase M9 — Workflow engine completeness (Epic: Triggers, Actions, Integrations)
-*Status:* in progress — trigger dispatcher + record trigger + webhook trigger shipped; schedule/form/AI-condition + action expansion + Slack pending · *Estimate:* 7 days · *Depends on:* M8 · *Covers:* FR-11 (full), FR-21, FR-22 · *Tests:* TC-39, TC-62–TC-65, TC-83
+*Status:* in progress — trigger dispatcher + record + webhook + schedule shipped; form / AI condition + action expansion + Slack pending · *Estimate:* 7 days · *Depends on:* M8 · *Covers:* FR-11 (full), FR-21, FR-22 · *Tests:* TC-39, TC-62–TC-65, TC-83
 
 **User stories**
-- `[🏗️]` M9.S1 — As an admin, I can use any of the v1 trigger types (record, time, webhook, form, AI condition). *Phase 1 shipped: `apps/automations/triggers.py` dispatcher (`TriggerEvent` dataclass, `fire(event)` matches by `type` against every ACTIVE+published automation in the workspace, `run_automation_with_payload(...)` for explicitly-routed types). **Record** trigger: Contact / Company / Deal create + Deal `stage_changed` post-save handlers dispatch via `transaction.on_commit` so rollbacks don't fire automations. **Webhook** trigger (phase 2a): `WebhookEndpoint` model (token + HMAC secret + is_active + fire_count + last_fired_at) + public `POST /api/webhooks/{token}/` view with `X-Offside-Signature` HMAC-SHA256 verification (accepts `sha256=<hex>` or bare hex), unknown-token→404, inactive→403, paused-automation→409, success→200+`{run_id}` + atomic `F("fire_count")+1`. 18 new tests total (10 trigger dispatcher + 8 webhook). **Pending:** schedule (Celery Beat / PeriodicTask), form (public unsigned POST), AI condition (periodic LLM eval), Gmail Pub/Sub stub (real in M10).*
+- `[🏗️]` M9.S1 — As an admin, I can use any of the v1 trigger types (record, time, webhook, form, AI condition). *Phase 1 shipped: `apps/automations/triggers.py` dispatcher (`TriggerEvent` dataclass, `fire(event)` matches by `type` against every ACTIVE+published automation in the workspace, `run_automation_with_payload(...)` for explicitly-routed types). **Record** trigger: Contact / Company / Deal create + Deal `stage_changed` post-save handlers dispatch via `transaction.on_commit` so rollbacks don't fire automations. **Webhook** trigger (phase 2a): `WebhookEndpoint` model + public `POST /api/webhooks/{token}/` view with `X-Offside-Signature` HMAC-SHA256 verification (accepts `sha256=<hex>` or bare hex), unknown-token→404, inactive→403, paused-automation→409, success→200+`{run_id}` + atomic `F("fire_count")+1`. **Schedule** trigger (phase 2b): `ScheduleTrigger` model (cron_expression + timezone_name + is_active + last_fired_at + fire_count) + `automations.scan_schedule_triggers` Beat task running every 60s — parses the 5-field cron via `celery.schedules.crontab` and calls `is_due(last_fired_at or now-61s)`; due rows call `run_automation_with_payload(trigger_type="schedule")`. **No-backlog semantics**: paused/unpublished automations still stamp `last_fired_at` on every sweep so un-pause doesn't fire a backlog. Bad cron strings logged + skipped without poisoning the sweep. 26 new tests total (10 dispatcher + 8 webhook + 8 schedule). **Pending:** form (public unsigned POST), AI condition (periodic LLM eval — likely defers into M11), Gmail Pub/Sub stub (real in M10).*
 - `[☑️]` M9.S2 — As an admin, I can use any v1 action type (CRM mutate, Slack, HTTP, branch, loop, delay, approval).
 - `[☑️]` M9.S3 — As an admin, I can post to Slack channels/DMs from any workflow.
 
 **Engineering tasks**
-- `[🏗️]` Trigger registry — webhook (HMAC) and record shipped (see M9.S1 note above). Form-submission endpoint, schedule (Beat-driven), Gmail Pub/Sub stub still pending.
+- `[🏗️]` Trigger registry — webhook (HMAC), record, and schedule (Beat-driven) shipped (see M9.S1 note above). Form-submission endpoint, AI-condition, Gmail Pub/Sub stub still pending.
 - `[☑️]` Action registry expansion — CRM mutations across all M5 entities; Slack action via OAuth integration; HTTP request with auth presets; loop-over-list step. (Branch + delay already in M7.)
 - `[☑️]` Slack OAuth + connection model in `apps/integrations`.
 - `[☑️]` Run inspector enriched — node graph viewer, retry counts, idempotency keys visible.
@@ -647,6 +647,19 @@ M9 opened; M9.S1 partially landed.
 Remaining for M9.S1: **schedule trigger** (Celery Beat + `django-celery-beat` PeriodicTask), **form trigger** (public unsigned POST with rate limit), **AI condition trigger** (periodic LLM eval over recent activity — likely defers into M11), Gmail Pub/Sub stub (real in M10).
 
 Remaining for M9 overall: M9.S2 (CRM mutate / Slack / HTTP / loop action expansion) and M9.S3 (Slack OAuth + post action).
+
+### Revision 8 — 2026-05 — M9.S1 phase 2b (schedule trigger)
+
+Third trigger type lands. M9.S1 remains 🏗️ (form + AI condition still open).
+
+- **Model.** New `ScheduleTrigger` on `apps.automations` — workspace + automation FK + `cron_expression` (5-field cron, e.g. "0 9 * * MON") + `timezone_name` (default UTC) + `label` + `is_active` + audit fields (`last_fired_at`, `fire_count`, `created_by`, `created_at`, `updated_at`). Workspace-scoped manager + two indexes: `(is_active, last_fired_at)` for the sweep query and `(workspace, is_active)` for per-workspace lookups. Migration `0004_scheduletrigger.py` hand-authored, depends on `0003_webhookendpoint`.
+- **Beat task.** `automations.scan_schedule_triggers` in `tasks.py`. Runs every 60s per a new `CELERY_BEAT_SCHEDULE` entry (next to the existing `wake_up_sweep`). Walks `is_active=True` rows; for each, parses the 5-field cron string and builds `celery.schedules.crontab(minute, hour, day_of_month, month_of_year, day_of_week)`. Calls `crontab.is_due(anchor)` where `anchor = last_fired_at or (now - 61s)` so first-scan-after-create evaluates immediately. Due rows call `triggers.run_automation_with_payload(automation, trigger_type="schedule", payload={schedule_trigger_id, cron})` and atomically bump `fire_count` + stamp `last_fired_at`. **No-backlog semantics**: `last_fired_at` is bumped even when no run is created (paused automation or no published version), so un-pause doesn't fire a backlog. Bad cron strings are logged + skipped without poisoning the sweep.
+- **Admin.** `ScheduleTriggerAdmin` registered so an admin can wire schedules from Django admin today (UI follows in M9.S2).
+- **Tests.** 8 new in `apps/automations/tests/test_schedules.py`: due cron fires + completes the run + bumps audit counters; inactive schedule skipped; recently-fired daily cron (last_fired_at 5m ago) skipped; **paused-automation no-backlog** test (sweep consumes the trigger, no run created, audit still bumped); bad cron logged + skipped without blocking other triggers in the same sweep; empty workspace returns 0; multiple schedules on same automation each fire independently; first sweep with `last_fired_at=None` fires immediately. No `freezegun` needed — tests use cron strings due every minute and dial `last_fired_at` into the past.
+
+No new deps — `celery.schedules.crontab` is already pulled in by `celery==5.4.0`.
+
+Remaining for M9.S1: form trigger (public unsigned POST + rate limit), AI condition (likely defers into M11), Gmail Pub/Sub stub (M10).
 
 ---
 
