@@ -15,6 +15,7 @@ from .models import (
     AutomationRun,
     AutomationStepRun,
     AutomationVersion,
+    FormEndpoint,
     HitlRequest,
     ScheduleTrigger,
     WebhookEndpoint,
@@ -151,6 +152,25 @@ class WebhookEndpointAdmin(admin.ModelAdmin):
     list_filter = ("is_active",)
     search_fields = ("token", "label", "workspace__slug", "automation__name")
     readonly_fields = ("token", "secret", "fire_count", "last_fired_at", "created_at")
+    autocomplete_fields = ("workspace", "automation", "created_by")
+
+
+@admin.register(FormEndpoint)
+class FormEndpointAdmin(admin.ModelAdmin):
+    list_display = (
+        "token",
+        "title",
+        "automation",
+        "workspace",
+        "is_active",
+        "rate_limit_per_minute",
+        "submission_count",
+        "last_submission_at",
+        "created_at",
+    )
+    list_filter = ("is_active",)
+    search_fields = ("token", "title", "workspace__slug", "automation__name")
+    readonly_fields = ("token", "submission_count", "last_submission_at", "created_at")
     autocomplete_fields = ("workspace", "automation", "created_by")
 
 

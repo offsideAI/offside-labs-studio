@@ -23,6 +23,7 @@ from .models import (
     Automation,
     AutomationRun,
     AutomationVersion,
+    FormEndpoint,
     WebhookEndpoint,
 )
 from .serializers import (
@@ -250,6 +251,74 @@ class WebhookFireView(APIView):
             fire_count=F("fire_count") + 1,
         )
 
+        return Response({"run_id": run_id}, status=status.HTTP_200_OK)
+
+
+class FormSubmitView(APIView):
+    """Public, unauthenticated `POST /api/forms/{token}/submit/`.
+
+    No HMAC. Rate-limited per endpoint via a min-gap between
+    `last_submission_at` and `now` derived from
+    `rate_limit_per_minute`. Body becomes the run's trigger_payload.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    def post(self, request, token: str):  # type: ignore[no-untyped-def]
+        try:
+            endpoint = FormEndpoint.objects.select_related("automation").get(token=token)
+        except FormEndpoint.DoesNotExist:
+            return Response({"detail": "unknown token"}, status=status.HTTP_404_NOT_FOUND)
+
+        if not endpoint.is_active:
+            return Response({"detail": "form disabled"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Rate limit: min gap = 60 / rate_limit_per_minute seconds.
+        if endpoint.last_submission_at and endpoint.rate_limit_per_minute > 0:
+            min_gap = 60.0 / endpoint.rate_limit_per_minute
+            elapsed = (timezone.now() - endpoint.last_submission_at).total_seconds()
+            if elapsed < min_gap:
+                retry_after = max(1, int(round(min_gap - elapsed)))
+                return Response(
+                    {"detail": "rate limited", "retry_after_seconds": retry_after},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                    headers={"Retry-After": str(retry_after)},
+                )
+
+        # Body parsing — JSON preferred, form-encoded falls back to request.data.
+        raw_body: bytes = request.body or b""
+        payload: dict
+        try:
+            parsed = json.loads(raw_body.decode("utf-8") or "null")
+            if isinstance(parsed, dict):
+                payload = parsed
+            elif parsed is None:
+                payload = {}
+            else:
+                payload = {"body": parsed}
+        except (ValueError, UnicodeDecodeError):
+            # Likely form-encoded — DRF's parser already populated request.data.
+            try:
+                payload = {k: v for k, v in request.data.items()}
+            except Exception:  # noqa: BLE001 — opaque bodies still fire
+                payload = {"raw": raw_body[:1024].decode("utf-8", errors="replace")}
+
+        run_id = run_automation_with_payload(
+            endpoint.automation,
+            trigger_type="form",
+            payload={**payload, "form_token": endpoint.token},
+        )
+        if run_id is None:
+            return Response(
+                {"detail": "automation is not active or has no published version"},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        FormEndpoint.objects.filter(pk=endpoint.pk).update(
+            last_submission_at=timezone.now(),
+            submission_count=F("submission_count") + 1,
+        )
         return Response({"run_id": run_id}, status=status.HTTP_200_OK)
 
 

@@ -310,6 +310,59 @@ class WebhookEndpoint(models.Model):
         return f"webhook {self.token[:8]}… → automation #{self.automation_id}"
 
 
+class FormEndpoint(models.Model):
+    """Public, unsigned form-submission trigger (M9.S1 phase 2c).
+
+    The user-facing URL is `POST /api/forms/{token}/submit/`. The body
+    becomes the run's `trigger_payload`. No HMAC — these are for
+    in-product / landing-page forms where the value is the captured
+    submission, not authenticated identity. Cheap spam guard: each
+    endpoint declares `rate_limit_per_minute` and the view enforces
+    a minimum gap of `60 / rate_limit_per_minute` seconds between
+    submissions.
+
+    For higher-trust integrations (Stripe, GitHub, etc.) use
+    `WebhookEndpoint` instead — that one verifies HMAC.
+    """
+
+    workspace = models.ForeignKey(
+        "workspaces.Workspace",
+        on_delete=models.CASCADE,
+        related_name="form_endpoints",
+    )
+    automation = models.ForeignKey(
+        Automation,
+        on_delete=models.CASCADE,
+        related_name="form_endpoints",
+    )
+
+    token = models.CharField(max_length=64, unique=True)
+    title = models.CharField(max_length=200, blank=True)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    rate_limit_per_minute = models.IntegerField(default=10)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="form_endpoints_created",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_submission_at = models.DateTimeField(null=True, blank=True)
+    submission_count = models.IntegerField(default=0)
+
+    objects = WorkspaceScopedManager()
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["workspace", "is_active"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"form {self.token[:8]}… → automation #{self.automation_id}"
+
+
 class ScheduleTrigger(models.Model):
     """Cron-driven trigger that fires a specific automation (M9.S1).
 

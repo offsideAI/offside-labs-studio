@@ -5,6 +5,7 @@ from .views import (
     AutomationRunViewSet,
     AutomationVersionViewSet,
     AutomationViewSet,
+    FormSubmitView,
     WebhookFireView,
 )
 
@@ -20,5 +21,10 @@ urlpatterns = router.urls + [
         "webhooks/<str:token>/",
         WebhookFireView.as_view(),
         name="webhook-fire",
+    ),
+    path(
+        "forms/<str:token>/submit/",
+        FormSubmitView.as_view(),
+        name="form-submit",
     ),
 ]
