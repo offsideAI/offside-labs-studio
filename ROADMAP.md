@@ -2,7 +2,7 @@
 
 > Companion to [PRD.md](./PRD.md) and [PLAN.md](./PLAN.md). Each **phase maps 1:1 to an epic.** Inside an epic, work is broken into user stories (the "what" from a user's view) and engineering tasks (the "how"). Acceptance criteria match the milestone demo defined in PLAN.md §13. Cross-references to PRD `FR-N` / `NFR-N` and TESTING `TC-N` are noted on each phase.
 
-**Status:** M0–M7 shipped + pushed to `origin/main`. M8 — all three user stories (S1 + S2 + S3) shipped locally. Remaining: HITL HTTP decide endpoint, undo/redo, TC-29..TC-32 frontend smoke-tests, manual UI smoke once toolchain is up.
+**Status:** M0–M7 shipped + pushed to `origin/main`. M8 — all three user stories (S1 + S2 + S3) shipped locally. M9 — trigger dispatcher + record trigger + webhook trigger shipped locally; schedule/form/AI-condition + action expansion + Slack pending. Lingering M8 punch-list: HITL HTTP decide endpoint, undo/redo, TC-29..TC-32 frontend smoke-tests.
 **Owner:** Offside Labs.
 **Last revised:** 2026-05.
 
@@ -10,11 +10,17 @@
 
 ## Status legend
 
-- `[✅]` — implemented and on `main`
-- `[🏗️]` — partially implemented / in progress
-- `[☑️]` — pending (not implemented yet)
+| Symbol | Meaning | Used on |
+|---|---|---|
+| `[✅]` | Implemented and on `main` (or shipped locally in a tagged Revision N block at the bottom of this file, awaiting commit). | Phase headers, user stories, engineering tasks, acceptance criteria. |
+| `[🏗️]` | Partially implemented — some pieces done, others pending. Always paired with an inline note describing what shipped vs what's left. | Same as above. |
+| `[☑️]` | Pending — not started yet, or scoped but not implemented. | Same as above. |
 
-Granularity: phase header = single rollup status; stories and engineering tasks each get their own checkbox so half-done milestones (deferred items punted to later milestones) stay honest.
+**Granularity.** Phase headers carry a single rollup status; stories, engineering tasks, and acceptance criteria each get their own checkbox so half-done milestones (deferred items punted to later milestones) stay honest. A phase is `[✅]` only when every story under it is `[✅]`.
+
+**Cross-references.** Stable inline IDs (`M2.S3`, `FR-12`, `TC-64`, `NFR-5`) link out to PRD.md and TESTING.md. Don't reuse a retired ID — append, never recycle.
+
+**Revision blocks.** Material slices added between commits get a `### Revision N — YYYY-MM — <summary>` block in the "Status updates" section at the bottom, with a file-by-file breakdown. Revision blocks are append-only.
 
 ---
 
@@ -261,22 +267,22 @@ Color discipline reminder: every UI surface added in any phase MUST consume `pac
 
 ---
 
-### `[☑️]` Phase M9 — Workflow engine completeness (Epic: Triggers, Actions, Integrations)
-*Status:* pending · *Estimate:* 7 days · *Depends on:* M8 · *Covers:* FR-11 (full), FR-21, FR-22 · *Tests:* TC-39, TC-62–TC-65, TC-83
+### `[🏗️]` Phase M9 — Workflow engine completeness (Epic: Triggers, Actions, Integrations)
+*Status:* in progress — trigger dispatcher + record trigger + webhook trigger shipped; schedule/form/AI-condition + action expansion + Slack pending · *Estimate:* 7 days · *Depends on:* M8 · *Covers:* FR-11 (full), FR-21, FR-22 · *Tests:* TC-39, TC-62–TC-65, TC-83
 
 **User stories**
-- `[☑️]` M9.S1 — As an admin, I can use any of the v1 trigger types (record, time, webhook, form, AI condition).
+- `[🏗️]` M9.S1 — As an admin, I can use any of the v1 trigger types (record, time, webhook, form, AI condition). *Phase 1 shipped: `apps/automations/triggers.py` dispatcher (`TriggerEvent` dataclass, `fire(event)` matches by `type` against every ACTIVE+published automation in the workspace, `run_automation_with_payload(...)` for explicitly-routed types). **Record** trigger: Contact / Company / Deal create + Deal `stage_changed` post-save handlers dispatch via `transaction.on_commit` so rollbacks don't fire automations. **Webhook** trigger (phase 2a): `WebhookEndpoint` model (token + HMAC secret + is_active + fire_count + last_fired_at) + public `POST /api/webhooks/{token}/` view with `X-Offside-Signature` HMAC-SHA256 verification (accepts `sha256=<hex>` or bare hex), unknown-token→404, inactive→403, paused-automation→409, success→200+`{run_id}` + atomic `F("fire_count")+1`. 18 new tests total (10 trigger dispatcher + 8 webhook). **Pending:** schedule (Celery Beat / PeriodicTask), form (public unsigned POST), AI condition (periodic LLM eval), Gmail Pub/Sub stub (real in M10).*
 - `[☑️]` M9.S2 — As an admin, I can use any v1 action type (CRM mutate, Slack, HTTP, branch, loop, delay, approval).
 - `[☑️]` M9.S3 — As an admin, I can post to Slack channels/DMs from any workflow.
 
 **Engineering tasks**
-- `[☑️]` Trigger registry — webhook (HMAC), form-submission endpoint, schedule (Beat-driven), Gmail Pub/Sub stub (real in M10).
+- `[🏗️]` Trigger registry — webhook (HMAC) and record shipped (see M9.S1 note above). Form-submission endpoint, schedule (Beat-driven), Gmail Pub/Sub stub still pending.
 - `[☑️]` Action registry expansion — CRM mutations across all M5 entities; Slack action via OAuth integration; HTTP request with auth presets; loop-over-list step. (Branch + delay already in M7.)
 - `[☑️]` Slack OAuth + connection model in `apps/integrations`.
 - `[☑️]` Run inspector enriched — node graph viewer, retry counts, idempotency keys visible.
 
 **Acceptance criteria**
-- `[☑️]` TC-39 (transient retry), TC-62 (Slack connect), TC-63 (post Slack from workflow), TC-64 (inbound webhook fires workflow), TC-65 (outbound HTTP with bearer), TC-83 (advancer step latency budget).
+- `[🏗️]` TC-39 (transient retry — M7 idempotency proven; retry-loop visibility pending), TC-62 (Slack connect — pending), TC-63 (post Slack from workflow — pending), TC-64 (inbound webhook fires workflow — **closed**: webhook endpoint + HMAC verification + tests prove fire-on-valid-sig, no-fire-on-bad-sig, audit counter bump), TC-65 (outbound HTTP with bearer — pending), TC-83 (advancer step latency budget — pending).
 - `[☑️]` 10-step workflow with branch + loop + HITL approve-from-iOS-push works end-to-end.
 
 ---
@@ -541,6 +547,8 @@ M0 ──► M1 ──► M2 ──► M3 ──► M4 ──► M5 ──► M6
 
 ## Total MVP estimate
 
+*Legend:* `[✅]` shipped · `[🏗️]` in progress · `[☑️]` pending. Full key at top of file.
+
 | Phase | Days | Status |
 |---|---|---|
 | M0  | 3 | `[✅]` |
@@ -552,7 +560,7 @@ M0 ──► M1 ──► M2 ──► M3 ──► M4 ──► M5 ──► M6
 | M6  | 5 | `[✅]` |
 | M7  | 7 | `[✅]` |
 | M8  | 7 | `[🏗️]` |
-| M9  | 7 | `[☑️]` |
+| M9  | 7 | `[🏗️]` |
 | M10 | 7 | `[☑️]` |
 | M11 | 6 | `[☑️]` |
 | M12 | 5 | `[☑️]` |
@@ -626,6 +634,19 @@ M8.S3 flipped from ☑️ to ✅. New `apps/ai` Django app + `generate_from_nl` 
 No new deps added — `anthropic==0.42.0` was already pinned. Test pytest + manual UI smoke pending the Docker toolchain.
 
 M8 close-out remaining: HITL HTTP decide endpoint (`/api/hitl/<token>/decide/` view over the M7 `hitl.py` service), undo/redo on the canvas, type-mismatch validator between adjacent nodes, manual UI smoke once `pnpm install && pnpm dev` runs.
+
+### Revision 7 — 2026-05 — M9.S1 phase 1 + 2a (record + webhook triggers)
+
+M9 opened; M9.S1 partially landed.
+
+- **Trigger dispatcher.** New `backend/apps/automations/triggers.py`. `TriggerEvent` dataclass keyed on `type` ∈ {manual, record, webhook, schedule, form, ai_condition}. `fire(event)` filters every `ACTIVE` automation in the workspace with a non-null `published_version`, runs `_matches(automation.trigger, event)`, and creates an `AutomationRun(version=automation.published_version)` per match — `kick_off(run)` walks it through the M7 runtime. Manual deliberately never auto-fires (default config for new workflows). `run_automation_with_payload(automation, *, trigger_type, payload)` is the explicit-routing helper used by webhook (and soon schedule/form) where the URL/cron is the routing — skips workspace-wide matching.
+- **Record trigger.** `apps/activities/signals.py` post-save handlers (Contact / Company / Deal create + Deal `stage_changed`) now call `emit_record(...)` via `transaction.on_commit(...)` so a rollback can't fire automations against state the user never persisted. Trigger config shape: `{type: "record", entity_type: "contact"|"company"|"deal", event: "created"|"updated"|"stage_changed"}`. 10 new tests in `test_triggers.py`: direct fire() matchers (entity/event/workspace/draft/manual short-circuit) + end-to-end with `@pytest.mark.django_db(transaction=True)` (Contact/Company/Deal create kicks off matching automation, Deal stage_id update fires `stage_changed` but not `created`, trigger_payload carries entity_type/record_id/record-specific fields).
+- **Webhook trigger.** New `WebhookEndpoint` model on `apps.automations` (workspace + automation FK + URL-safe `token` (unique) + HMAC `secret` + `label` + `is_active` + audit fields `created_by` / `created_at` / `fire_count` / `last_fired_at`). Migration `0003_webhookendpoint.py` hand-authored. Public `POST /api/webhooks/{token}/` via `WebhookFireView(APIView)` with `authentication_classes = []` + `permission_classes = [AllowAny]` — unknown token → 404, inactive endpoint → 403, bad/missing `X-Offside-Signature` → 401 (HMAC-SHA256 constant-time compare; accepts `sha256=<hex>` or bare hex), paused automation / no published version → 409, success → 200 + `{run_id}` + atomic `F("fire_count")+1` and `last_fired_at` stamp. JSON body becomes `trigger_payload` (plus `type: "webhook"` + `webhook_token`); non-JSON falls back to `{"raw": ...}` so opaque payloads still fire. `WebhookEndpointAdmin` registered so workspace admins can mint endpoints from Django admin (frontend CRUD will follow with M9.S2). 8 new tests in `test_webhooks.py`: valid signature fires + completes + trigger_payload merged; bare-hex sig accepted; bad sig 401 + no run; missing sig 401; unknown token 404; inactive endpoint 403; paused automation 409 + no run; non-JSON body → `{raw}` payload + 200.
+- **Acceptance.** TC-64 (inbound webhook fires workflow) now closed by the test slice. Manual smoke (running curl against `/api/webhooks/{token}/` with a real signed payload) pending Docker toolchain.
+
+Remaining for M9.S1: **schedule trigger** (Celery Beat + `django-celery-beat` PeriodicTask), **form trigger** (public unsigned POST with rate limit), **AI condition trigger** (periodic LLM eval over recent activity — likely defers into M11), Gmail Pub/Sub stub (real in M10).
+
+Remaining for M9 overall: M9.S2 (CRM mutate / Slack / HTTP / loop action expansion) and M9.S3 (Slack OAuth + post action).
 
 ---
 
