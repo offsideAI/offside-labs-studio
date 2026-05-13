@@ -209,6 +209,650 @@ SEED_AGENTS: list[dict[str, Any]] = [
             },
         },
     },
+
+    # =============================================================
+    # E-commerce lifecycle agents (added 2026-05).
+    # Stages covered: lead capture → follow-up → conversion →
+    # fulfillment → payments → customer service.
+    # =============================================================
+
+    # 5. Lead from form — captures a contact from a public form-trigger
+    # endpoint (web signup, lead magnet, demo request). Pairs with the
+    # M9.S1 FormEndpoint surface; install + then create a FormEndpoint
+    # in admin pointing at the installed automation.
+    {
+        "slug": "lead-from-form",
+        "name": "Lead from form",
+        "icon_emoji": "📋",
+        "category": MarketplaceAgentCategory.LEAD_MANAGEMENT,
+        "description": "Turns a public form submission into a contact + welcome note + qualify-lead task.",
+        "long_description": (
+            "Form trigger. The submitted form payload is expected to carry "
+            "first_name / last_name / primary_email / company keys. Creates "
+            "the contact, drops a welcome note, and queues a qualify-this-lead "
+            "task. Wire the trigger by creating a FormEndpoint in Django admin "
+            "pointing at the installed automation."
+        ),
+        "trigger": {"type": "form"},
+        "graph": {
+            "start_node_id": "n1",
+            "nodes": {
+                "n1": {
+                    "type": "action",
+                    "label": "Create contact from form",
+                    "config": {
+                        "action": "crm.create_contact",
+                        "input": {
+                            "first_name": "{{ trigger.first_name }}",
+                            "last_name": "{{ trigger.last_name }}",
+                            "primary_email": "{{ trigger.primary_email }}",
+                            "lifecycle_stage": "lead",
+                            "source": "form",
+                            "created_by_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "n2",
+                    "position": {"x": 80, "y": 80},
+                },
+                "n2": {
+                    "type": "action",
+                    "label": "Drop welcome note",
+                    "config": {
+                        "action": "crm.create_note",
+                        "input": {
+                            "body_md": "## Welcome from form\n\nAuto-captured via the public form endpoint.",
+                            "related_type": "contact",
+                            "related_id": "{{ n1.contact_id }}",
+                            "author_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "n3",
+                    "position": {"x": 360, "y": 80},
+                },
+                "n3": {
+                    "type": "action",
+                    "label": "Queue qualify task",
+                    "config": {
+                        "action": "crm.create_task",
+                        "input": {
+                            "title": "Qualify this form lead",
+                            "related_type": "contact",
+                            "related_id": "{{ n1.contact_id }}",
+                            "priority": "high",
+                            "created_by_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "end",
+                    "position": {"x": 660, "y": 80},
+                },
+                "end": {"type": "end", "position": {"x": 960, "y": 80}},
+            },
+        },
+    },
+
+    # 6. Welcome series — day 0 — new-contact onboarding. Drops a
+    # welcome note + queues a follow-up task. For multi-day series, the
+    # next-day task ships in the M11 sub-graph + delay-node combo.
+    {
+        "slug": "welcome-series-day-0",
+        "name": "Welcome series — day 0",
+        "icon_emoji": "📧",
+        "category": MarketplaceAgentCategory.COMMS,
+        "description": "On contact create, drop a welcome note + queue a 3-day follow-up task.",
+        "long_description": (
+            "Triggered when a contact lands. Adds a markdown welcome note and "
+            "queues a task to follow up in ~3 days. Customize the note body to "
+            "match your brand voice; swap the follow-up cadence by editing the "
+            "task title + priority."
+        ),
+        "trigger": {"type": "record", "entity_type": "contact", "event": "created"},
+        "graph": {
+            "start_node_id": "n1",
+            "nodes": {
+                "n1": {
+                    "type": "action",
+                    "label": "Drop welcome note",
+                    "config": {
+                        "action": "crm.create_note",
+                        "input": {
+                            "body_md": "## Welcome 🌱\n\nThanks for joining. We'll be in touch within 3 days with next steps.",
+                            "related_type": "contact",
+                            "related_id": "{{ trigger.record_id }}",
+                            "author_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "n2",
+                    "position": {"x": 80, "y": 80},
+                },
+                "n2": {
+                    "type": "action",
+                    "label": "Queue day-3 follow-up",
+                    "config": {
+                        "action": "crm.create_task",
+                        "input": {
+                            "title": "Day-3 welcome follow-up",
+                            "related_type": "contact",
+                            "related_id": "{{ trigger.record_id }}",
+                            "priority": "medium",
+                            "created_by_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "end",
+                    "position": {"x": 420, "y": 80},
+                },
+                "end": {"type": "end", "position": {"x": 760, "y": 80}},
+            },
+        },
+    },
+
+    # 7. Abandoned cart recovery — fires when a webhook from your
+    # storefront announces an abandoned cart. Creates contact + queues
+    # urgent recover-this-cart task + drops cart-detail note.
+    {
+        "slug": "abandoned-cart-recovery",
+        "name": "Abandoned cart recovery",
+        "icon_emoji": "🛒",
+        "category": MarketplaceAgentCategory.CART_RECOVERY,
+        "description": "Webhook from your storefront → contact + high-priority recover-cart task.",
+        "long_description": (
+            "Webhook trigger. The payload should carry first_name / primary_email / "
+            "cart_total / cart_url. The agent upserts the contact, drops a note with "
+            "the cart total, and queues an urgent recover-this-cart task. Wire your "
+            "Shopify / WooCommerce / Bigcommerce 'cart abandoned' webhook at the "
+            "WebhookEndpoint URL you create after install."
+        ),
+        "trigger": {"type": "webhook"},
+        "graph": {
+            "start_node_id": "n1",
+            "nodes": {
+                "n1": {
+                    "type": "action",
+                    "label": "Upsert abandoned-cart contact",
+                    "config": {
+                        "action": "crm.create_contact",
+                        "input": {
+                            "first_name": "{{ trigger.first_name }}",
+                            "last_name": "{{ trigger.last_name }}",
+                            "primary_email": "{{ trigger.primary_email }}",
+                            "lifecycle_stage": "lead",
+                            "source": "abandoned_cart",
+                            "created_by_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "n2",
+                    "position": {"x": 80, "y": 80},
+                },
+                "n2": {
+                    "type": "action",
+                    "label": "Note cart details",
+                    "config": {
+                        "action": "crm.create_note",
+                        "input": {
+                            "body_md": "## 🛒 Abandoned cart\n\n- Cart total: {{ trigger.cart_total }}\n- Cart URL: {{ trigger.cart_url }}\n\n_Auto-logged by Abandoned cart recovery agent._",
+                            "related_type": "contact",
+                            "related_id": "{{ n1.contact_id }}",
+                            "author_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "n3",
+                    "position": {"x": 380, "y": 80},
+                },
+                "n3": {
+                    "type": "action",
+                    "label": "Queue recover-cart task",
+                    "config": {
+                        "action": "crm.create_task",
+                        "input": {
+                            "title": "Recover abandoned cart — {{ trigger.cart_total }}",
+                            "description": "Reach out within 24h with a recovery offer.",
+                            "related_type": "contact",
+                            "related_id": "{{ n1.contact_id }}",
+                            "priority": "high",
+                            "created_by_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "end",
+                    "position": {"x": 700, "y": 80},
+                },
+                "end": {"type": "end", "position": {"x": 1020, "y": 80}},
+            },
+        },
+    },
+
+    # 8. Order received — webhook from Shopify-style storefront. Adds
+    # an order-received note to the contact + queues a fulfillment task.
+    {
+        "slug": "order-received",
+        "name": "Order received",
+        "icon_emoji": "📦",
+        "category": MarketplaceAgentCategory.FULFILLMENT,
+        "description": "Storefront webhook → order note + fulfillment task on the buyer's contact record.",
+        "long_description": (
+            "Webhook trigger. The payload should carry contact_id / order_id / "
+            "order_total / line_items. Drops a structured order note on the "
+            "contact and queues a fulfillment task. Combine with the Shipping "
+            "dispatched agent to close the fulfillment loop."
+        ),
+        "trigger": {"type": "webhook"},
+        "graph": {
+            "start_node_id": "n1",
+            "nodes": {
+                "n1": {
+                    "type": "action",
+                    "label": "Log order receipt",
+                    "config": {
+                        "action": "crm.create_note",
+                        "input": {
+                            "body_md": "## 📦 Order received\n\n- Order #{{ trigger.order_id }}\n- Total: {{ trigger.order_total }}\n\nFulfillment task queued.",
+                            "related_type": "contact",
+                            "related_id": "{{ trigger.contact_id }}",
+                            "author_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "n2",
+                    "position": {"x": 80, "y": 80},
+                },
+                "n2": {
+                    "type": "action",
+                    "label": "Queue fulfillment",
+                    "config": {
+                        "action": "crm.create_task",
+                        "input": {
+                            "title": "Fulfill order #{{ trigger.order_id }}",
+                            "description": "Pick, pack, and dispatch.",
+                            "related_type": "contact",
+                            "related_id": "{{ trigger.contact_id }}",
+                            "priority": "high",
+                            "created_by_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "end",
+                    "position": {"x": 420, "y": 80},
+                },
+                "end": {"type": "end", "position": {"x": 760, "y": 80}},
+            },
+        },
+    },
+
+    # 9. Shipping dispatched — webhook from carrier. Logs the tracking
+    # event + creates a delivery-confirmation task + optionally hits a
+    # customer-notification endpoint.
+    {
+        "slug": "shipping-dispatched",
+        "name": "Shipping dispatched",
+        "icon_emoji": "🚚",
+        "category": MarketplaceAgentCategory.FULFILLMENT,
+        "description": "Carrier webhook → shipping note on contact + delivery-confirm task + customer ping.",
+        "long_description": (
+            "Webhook trigger. The payload should carry contact_id / order_id / "
+            "tracking_number / carrier. Drops a shipping note, queues a "
+            "confirm-delivery task, and (optionally) hits a placeholder "
+            "customer-notification endpoint via crm.http.request. Replace the "
+            "endpoint with your transactional-email provider's API."
+        ),
+        "trigger": {"type": "webhook"},
+        "graph": {
+            "start_node_id": "n1",
+            "nodes": {
+                "n1": {
+                    "type": "action",
+                    "label": "Log shipping",
+                    "config": {
+                        "action": "crm.create_note",
+                        "input": {
+                            "body_md": "## 🚚 Shipped\n\n- Carrier: {{ trigger.carrier }}\n- Tracking #: {{ trigger.tracking_number }}\n- Order #: {{ trigger.order_id }}",
+                            "related_type": "contact",
+                            "related_id": "{{ trigger.contact_id }}",
+                            "author_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "n2",
+                    "position": {"x": 80, "y": 80},
+                },
+                "n2": {
+                    "type": "action",
+                    "label": "Confirm-delivery task",
+                    "config": {
+                        "action": "crm.create_task",
+                        "input": {
+                            "title": "Confirm delivery for order #{{ trigger.order_id }}",
+                            "related_type": "contact",
+                            "related_id": "{{ trigger.contact_id }}",
+                            "priority": "medium",
+                            "created_by_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "n3",
+                    "position": {"x": 420, "y": 80},
+                },
+                "n3": {
+                    "type": "action",
+                    "label": "Notify customer (placeholder)",
+                    "config": {
+                        "action": "crm.http.request",
+                        "input": {
+                            "url": "https://httpbin.org/post",
+                            "method": "POST",
+                            "body": {
+                                "kind": "shipping_notification",
+                                "tracking_number": "{{ trigger.tracking_number }}",
+                                "order_id": "{{ trigger.order_id }}",
+                            },
+                        },
+                    },
+                    "next": "end",
+                    "position": {"x": 760, "y": 80},
+                },
+                "end": {"type": "end", "position": {"x": 1100, "y": 80}},
+            },
+        },
+    },
+
+    # 10. Payment success — Stripe-style webhook. Updates the deal stage
+    # to closed_won + drops a payment-received note on the contact.
+    {
+        "slug": "payment-success",
+        "name": "Payment success",
+        "icon_emoji": "💳",
+        "category": MarketplaceAgentCategory.PAYMENTS,
+        "description": "Payment-provider webhook → move deal to closed_won + thank-you note.",
+        "long_description": (
+            "Webhook trigger. The payload should carry deal_id / contact_id / "
+            "amount / provider_charge_id. Moves the deal to closed_won via "
+            "crm.move_deal_stage and drops a thank-you note. Wire your Stripe / "
+            "Paddle / LemonSqueezy 'charge.succeeded' webhook here."
+        ),
+        "trigger": {"type": "webhook"},
+        "graph": {
+            "start_node_id": "n1",
+            "nodes": {
+                "n1": {
+                    "type": "action",
+                    "label": "Move deal → closed_won",
+                    "config": {
+                        "action": "crm.move_deal_stage",
+                        "input": {
+                            "deal_id": "{{ trigger.deal_id }}",
+                            "stage_id": "closed_won",
+                        },
+                    },
+                    "next": "n2",
+                    "position": {"x": 80, "y": 80},
+                },
+                "n2": {
+                    "type": "action",
+                    "label": "Thank-you note",
+                    "config": {
+                        "action": "crm.create_note",
+                        "input": {
+                            "body_md": "## 💳 Payment received\n\n- Amount: {{ trigger.amount }}\n- Provider charge: {{ trigger.provider_charge_id }}\n\nThanks!",
+                            "related_type": "contact",
+                            "related_id": "{{ trigger.contact_id }}",
+                            "author_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "end",
+                    "position": {"x": 420, "y": 80},
+                },
+                "end": {"type": "end", "position": {"x": 760, "y": 80}},
+            },
+        },
+    },
+
+    # 11. Failed payment retry — Stripe-style "charge.failed" webhook.
+    # High-priority retry task + flag note + outbound ping to ops.
+    {
+        "slug": "failed-payment-retry",
+        "name": "Failed payment retry",
+        "icon_emoji": "💸",
+        "category": MarketplaceAgentCategory.PAYMENTS,
+        "description": "Payment-provider failure webhook → urgent recovery task + ops ping.",
+        "long_description": (
+            "Webhook trigger. The payload should carry contact_id / deal_id / "
+            "amount / failure_reason. Drops a flag note, queues an urgent task, "
+            "and pings ops via crm.http.request. Combine with a HITL approval "
+            "node when the retry value warrants manual review."
+        ),
+        "trigger": {"type": "webhook"},
+        "graph": {
+            "start_node_id": "n1",
+            "nodes": {
+                "n1": {
+                    "type": "action",
+                    "label": "Note failure",
+                    "config": {
+                        "action": "crm.create_note",
+                        "input": {
+                            "body_md": "## 💸 Payment failed\n\n- Amount: {{ trigger.amount }}\n- Reason: {{ trigger.failure_reason }}\n\n**Action required.**",
+                            "related_type": "contact",
+                            "related_id": "{{ trigger.contact_id }}",
+                            "author_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "n2",
+                    "position": {"x": 80, "y": 80},
+                },
+                "n2": {
+                    "type": "action",
+                    "label": "Queue urgent retry",
+                    "config": {
+                        "action": "crm.create_task",
+                        "input": {
+                            "title": "Retry failed payment — {{ trigger.amount }}",
+                            "description": "Reason: {{ trigger.failure_reason }}",
+                            "related_type": "contact",
+                            "related_id": "{{ trigger.contact_id }}",
+                            "priority": "high",
+                            "created_by_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "n3",
+                    "position": {"x": 420, "y": 80},
+                },
+                "n3": {
+                    "type": "action",
+                    "label": "Ping ops",
+                    "config": {
+                        "action": "crm.http.request",
+                        "input": {
+                            "url": "https://httpbin.org/post",
+                            "method": "POST",
+                            "body": {
+                                "kind": "payment_failed",
+                                "contact_id": "{{ trigger.contact_id }}",
+                                "amount": "{{ trigger.amount }}",
+                            },
+                        },
+                    },
+                    "next": "end",
+                    "position": {"x": 760, "y": 80},
+                },
+                "end": {"type": "end", "position": {"x": 1100, "y": 80}},
+            },
+        },
+    },
+
+    # 12. Refund request handler — public form for refund requests.
+    # Creates contact (if new) + urgent task for the support team.
+    {
+        "slug": "refund-request-handler",
+        "name": "Refund request handler",
+        "icon_emoji": "↩️",
+        "category": MarketplaceAgentCategory.CUSTOMER_SERVICE,
+        "description": "Public refund form → contact upsert + urgent CS task with order details.",
+        "long_description": (
+            "Form trigger. The submitted form should carry first_name / "
+            "primary_email / order_id / reason. Upserts the contact, drops a "
+            "refund-request note with the full reason, and queues an urgent "
+            "CS task. Pair with a HITL approval node before any auto-refund."
+        ),
+        "trigger": {"type": "form"},
+        "graph": {
+            "start_node_id": "n1",
+            "nodes": {
+                "n1": {
+                    "type": "action",
+                    "label": "Upsert refund-requester",
+                    "config": {
+                        "action": "crm.create_contact",
+                        "input": {
+                            "first_name": "{{ trigger.first_name }}",
+                            "last_name": "{{ trigger.last_name }}",
+                            "primary_email": "{{ trigger.primary_email }}",
+                            "source": "refund_form",
+                            "created_by_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "n2",
+                    "position": {"x": 80, "y": 80},
+                },
+                "n2": {
+                    "type": "action",
+                    "label": "Log refund reason",
+                    "config": {
+                        "action": "crm.create_note",
+                        "input": {
+                            "body_md": "## ↩️ Refund request\n\n- Order #: {{ trigger.order_id }}\n- Reason: {{ trigger.reason }}",
+                            "related_type": "contact",
+                            "related_id": "{{ n1.contact_id }}",
+                            "author_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "n3",
+                    "position": {"x": 420, "y": 80},
+                },
+                "n3": {
+                    "type": "action",
+                    "label": "Queue urgent CS task",
+                    "config": {
+                        "action": "crm.create_task",
+                        "input": {
+                            "title": "Refund request — order #{{ trigger.order_id }}",
+                            "description": "Reason: {{ trigger.reason }}. Review eligibility before approving.",
+                            "related_type": "contact",
+                            "related_id": "{{ n1.contact_id }}",
+                            "priority": "high",
+                            "created_by_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "end",
+                    "position": {"x": 760, "y": 80},
+                },
+                "end": {"type": "end", "position": {"x": 1100, "y": 80}},
+            },
+        },
+    },
+
+    # 13. Post-purchase review request — record(deal.stage_changed)
+    # when the deal hits closed_won. Drops a "ask for a review" task.
+    {
+        "slug": "post-purchase-review-request",
+        "name": "Post-purchase review request",
+        "icon_emoji": "⭐",
+        "category": MarketplaceAgentCategory.CUSTOMER_SERVICE,
+        "description": "Deal closed_won → queue a task to ask the customer for a review.",
+        "long_description": (
+            "Triggers when any deal moves to closed_won. Drops a note "
+            "acknowledging the win and queues a 'ask for review' task. "
+            "Customize the task title to match your review platform "
+            "(Trustpilot, G2, Capterra, etc.)."
+        ),
+        "trigger": {"type": "record", "entity_type": "deal", "event": "stage_changed"},
+        "graph": {
+            "start_node_id": "n1",
+            "nodes": {
+                "n1": {
+                    "type": "branch",
+                    "label": "Won?",
+                    "config": {
+                        "field": "trigger.stage_id",
+                        "op": "eq",
+                        "value": "closed_won",
+                    },
+                    "true_next": "n2",
+                    "false_next": "end",
+                    "position": {"x": 80, "y": 80},
+                },
+                "n2": {
+                    "type": "action",
+                    "label": "Queue review request",
+                    "config": {
+                        "action": "crm.create_task",
+                        "input": {
+                            "title": "Ask for a review",
+                            "description": "Reach out to the customer 1-2 weeks after purchase to request a public review.",
+                            "related_type": "deal",
+                            "related_id": "{{ trigger.record_id }}",
+                            "priority": "medium",
+                            "created_by_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "end",
+                    "position": {"x": 420, "y": 80},
+                },
+                "end": {"type": "end", "position": {"x": 760, "y": 80}},
+            },
+        },
+    },
+
+    # 14. Repeat-purchase nudge — Weekly schedule (use ScheduleTrigger
+    # row pointing at the installed automation). Logs that the sweep
+    # fired — extend with crm.loop over your stale-customer list once
+    # custom-field queries are available (M11+).
+    {
+        "slug": "repeat-purchase-nudge",
+        "name": "Repeat-purchase nudge",
+        "icon_emoji": "🔁",
+        "category": MarketplaceAgentCategory.COMMS,
+        "description": "Weekly schedule that loops over stale customers and queues re-engagement tasks.",
+        "long_description": (
+            "Schedule trigger. The agent's body iterates over a list of stale "
+            "customer ids (passed in via the schedule's trigger_payload) and "
+            "queues a re-engagement task per customer. Wire a ScheduleTrigger "
+            "row (cron `0 9 * * MON` for Monday-9am-UTC) after install. "
+            "Replace the placeholder items list with a real query in M11."
+        ),
+        "trigger": {"type": "schedule"},
+        "graph": {
+            "start_node_id": "n1",
+            "nodes": {
+                "n1": {
+                    "type": "action",
+                    "label": "Log sweep start",
+                    "config": {
+                        "action": "log",
+                        "input": {
+                            "message": "repeat-purchase-nudge sweep started",
+                            "cron": "{{ trigger.cron }}",
+                        },
+                    },
+                    "next": "n2",
+                    "position": {"x": 80, "y": 80},
+                },
+                "n2": {
+                    "type": "action",
+                    "label": "Loop over stale customers",
+                    "config": {
+                        "action": "crm.loop",
+                        "input": {
+                            "items": [],
+                            "inner_action": "log",
+                            "inner_input": {
+                                "message": "re-engage customer",
+                                "customer_id": "{{ item.id }}",
+                                "index": "{{ index }}",
+                            },
+                            "on_error": "continue",
+                            "max_items": 200,
+                        },
+                    },
+                    "next": "end",
+                    "position": {"x": 420, "y": 80},
+                },
+                "end": {"type": "end", "position": {"x": 760, "y": 80}},
+            },
+        },
+    },
 ]
 
 

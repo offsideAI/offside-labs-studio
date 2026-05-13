@@ -15,8 +15,12 @@ import { WorkflowCanvas } from "../../../../components/workflow-canvas";
 
 const CATEGORY_LABEL: Record<string, string> = {
   lead_management: "Lead management",
-  deal_hygiene: "Deal hygiene",
+  cart_recovery: "Cart recovery",
   comms: "Communications",
+  fulfillment: "Fulfillment",
+  payments: "Payments",
+  customer_service: "Customer service",
+  deal_hygiene: "Deal hygiene",
   integrations: "Integrations",
   operations: "Operations",
 };

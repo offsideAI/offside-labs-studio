@@ -1178,7 +1178,11 @@ export type MarketplaceAgentCategory =
   | "deal_hygiene"
   | "comms"
   | "integrations"
-  | "operations";
+  | "operations"
+  | "cart_recovery"
+  | "fulfillment"
+  | "payments"
+  | "customer_service";
 
 export interface MarketplaceAgentSummary {
   id: number;

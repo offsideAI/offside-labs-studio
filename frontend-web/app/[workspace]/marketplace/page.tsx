@@ -13,16 +13,28 @@ import { useActiveWorkspace } from "../../../lib/contexts";
 
 const CATEGORY_LABELS: Record<MarketplaceAgentCategory, string> = {
   lead_management: "Lead management",
-  deal_hygiene: "Deal hygiene",
+  cart_recovery: "Cart recovery",
   comms: "Communications",
+  fulfillment: "Fulfillment",
+  payments: "Payments",
+  customer_service: "Customer service",
+  deal_hygiene: "Deal hygiene",
   integrations: "Integrations",
   operations: "Operations",
 };
 
+// Display order — leads with the e-commerce lifecycle stages
+// (lead → conversion → fulfillment → payments → service) so a
+// browsing admin can scan the catalog top-to-bottom in the order
+// they're most likely to think about their funnel.
 const CATEGORIES: MarketplaceAgentCategory[] = [
   "lead_management",
-  "deal_hygiene",
+  "cart_recovery",
   "comms",
+  "fulfillment",
+  "payments",
+  "customer_service",
+  "deal_hygiene",
   "integrations",
   "operations",
 ];

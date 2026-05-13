@@ -32,6 +32,11 @@ class MarketplaceAgentCategory(models.TextChoices):
     COMMS = "comms", "Communications"
     INTEGRATIONS = "integrations", "Integrations"
     OPERATIONS = "operations", "Operations"
+    # E-commerce lifecycle (added 2026-05 with seed expansion).
+    CART_RECOVERY = "cart_recovery", "Cart recovery"
+    FULFILLMENT = "fulfillment", "Fulfillment"
+    PAYMENTS = "payments", "Payments"
+    CUSTOMER_SERVICE = "customer_service", "Customer service"
 
 
 class MarketplaceAgent(models.Model):
