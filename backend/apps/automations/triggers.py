@@ -117,8 +117,43 @@ def _matches(trigger_config: dict[str, Any], event: TriggerEvent) -> bool:
         if trigger_config.get("event") != event.event:
             return False
         return True
-    # Other types: phase-2 of M9.S1.
+    if event.type == "webhook":
+        # Webhook events route by URL (WebhookEndpoint row), not by fire()-based
+        # matching. fire(webhook) is supported for symmetry; it matches every
+        # automation whose trigger.type is "webhook" in the workspace, which is
+        # almost never what you want — prefer `run_automation_with_payload`.
+        return True
+    # Other types: phase-2b of M9.S1.
     return False
+
+
+def run_automation_with_payload(
+    automation: Automation,
+    *,
+    trigger_type: str,
+    payload: dict[str, Any] | None = None,
+) -> int | None:
+    """Create + kick off a run for an explicitly-routed automation.
+
+    Webhook, schedule, and form triggers all know exactly which
+    automation to fire (the URL / cron row / form id is the routing).
+    This helper skips fire()'s workspace-wide matching pass.
+
+    Returns the new run id, or None if the automation isn't eligible
+    (not ACTIVE, no published version).
+    """
+    if automation.status != AutomationStatus.ACTIVE:
+        return None
+    if not automation.published_version_id:
+        return None
+    run = AutomationRun.objects.create(
+        automation_id=automation.id,
+        workspace_id=automation.workspace_id,
+        version_id=automation.published_version_id,
+        trigger_payload={"type": trigger_type, **(payload or {})},
+    )
+    kick_off(run)
+    return run.pk
 
 
 def _payload_for(event: TriggerEvent) -> dict[str, Any]:
@@ -171,4 +206,5 @@ __all__ = [
     "RECORD_ENTITY_TYPES",
     "fire",
     "emit_record",
+    "run_automation_with_payload",
 ]

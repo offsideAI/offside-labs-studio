@@ -1,11 +1,20 @@
-"""ViewSets for the automations editor + run inspector (M8)."""
+"""ViewSets for the automations editor + run inspector (M8) + public
+webhook firing endpoint (M9.S1)."""
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
+
+from django.db.models import F
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.workspaces.permissions import IsWorkspaceManager, IsWorkspaceMember
 
@@ -14,6 +23,7 @@ from .models import (
     Automation,
     AutomationRun,
     AutomationVersion,
+    WebhookEndpoint,
 )
 from .serializers import (
     AutomationRunDetailSerializer,
@@ -24,6 +34,7 @@ from .serializers import (
 )
 from .tasks import cancel_run as cancel_run_service
 from .tasks import kick_off, publish_automation
+from .triggers import run_automation_with_payload
 
 from apps.ai.exceptions import AIClientError, AIResponseError
 from apps.ai.services import generate_automation_graph
@@ -180,6 +191,75 @@ class AutomationRunViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(
             {**AutomationRunDetailSerializer(run).data, "cancelled": result == "cancelled"}
         )
+
+
+class WebhookFireView(APIView):
+    """Public, unauthenticated `POST /api/webhooks/{token}/`.
+
+    Verifies HMAC-SHA256 of the raw request body against the endpoint's
+    secret, then kicks off the bound automation. The signature header
+    accepts either `sha256=<hex>` (GitHub-style) or a bare hex digest.
+    Returns 200 + `{run_id}` on success.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    SIGNATURE_HEADER = "HTTP_X_OFFSIDE_SIGNATURE"
+
+    def post(self, request, token: str):  # type: ignore[no-untyped-def]
+        try:
+            endpoint = WebhookEndpoint.objects.select_related("automation").get(token=token)
+        except WebhookEndpoint.DoesNotExist:
+            return Response({"detail": "unknown token"}, status=status.HTTP_404_NOT_FOUND)
+
+        if not endpoint.is_active:
+            return Response({"detail": "endpoint disabled"}, status=status.HTTP_403_FORBIDDEN)
+
+        raw_body: bytes = request.body or b""
+        provided = request.META.get(self.SIGNATURE_HEADER, "")
+        if not _verify_signature(secret=endpoint.secret, body=raw_body, provided=provided):
+            return Response(
+                {"detail": "invalid signature"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # Parse the body as JSON if it's not already (DRF won't have done this
+        # for us when we read .body directly). Bare bytes / non-JSON payloads
+        # still fire the run with `{}`.
+        payload: dict
+        try:
+            parsed = json.loads(raw_body.decode("utf-8") or "null")
+            payload = parsed if isinstance(parsed, dict) else {"body": parsed}
+        except (ValueError, UnicodeDecodeError):
+            payload = {"raw": raw_body[:1024].decode("utf-8", errors="replace")}
+
+        run_id = run_automation_with_payload(
+            endpoint.automation,
+            trigger_type="webhook",
+            payload={**payload, "webhook_token": endpoint.token},
+        )
+        if run_id is None:
+            return Response(
+                {"detail": "automation is not active or has no published version"},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        # Audit counters. Update last-fired_at + fire_count atomically.
+        WebhookEndpoint.objects.filter(pk=endpoint.pk).update(
+            last_fired_at=timezone.now(),
+            fire_count=F("fire_count") + 1,
+        )
+
+        return Response({"run_id": run_id}, status=status.HTTP_200_OK)
+
+
+def _verify_signature(*, secret: str, body: bytes, provided: str) -> bool:
+    if not provided or not secret:
+        return False
+    if provided.startswith("sha256="):
+        provided = provided[len("sha256=") :]
+    expected = hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, provided.strip())
 
 
 class AutomationVersionViewSet(viewsets.ReadOnlyModelViewSet):

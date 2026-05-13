@@ -16,6 +16,7 @@ from .models import (
     AutomationStepRun,
     AutomationVersion,
     HitlRequest,
+    WebhookEndpoint,
 )
 
 
@@ -131,6 +132,25 @@ class HitlRequestAdmin(admin.ModelAdmin):
     search_fields = ("step_id", "summary")
     readonly_fields = ("token", "created_at")
     autocomplete_fields = ("run", "decided_by")
+
+
+@admin.register(WebhookEndpoint)
+class WebhookEndpointAdmin(admin.ModelAdmin):
+    list_display = (
+        "token",
+        "label",
+        "automation",
+        "workspace",
+        "is_active",
+        "fire_count",
+        "last_fired_at",
+        "created_by",
+        "created_at",
+    )
+    list_filter = ("is_active",)
+    search_fields = ("token", "label", "workspace__slug", "automation__name")
+    readonly_fields = ("token", "secret", "fire_count", "last_fired_at", "created_at")
+    autocomplete_fields = ("workspace", "automation", "created_by")
 
 
 @admin.register(AgentPolicy)

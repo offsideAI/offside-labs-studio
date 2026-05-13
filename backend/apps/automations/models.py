@@ -263,6 +263,53 @@ class HitlRequest(models.Model):
         return f"HITL run={self.run_id} step={self.step_id}"
 
 
+class WebhookEndpoint(models.Model):
+    """Public webhook URL that fires a specific automation (M9.S1).
+
+    Each row mints a URL-safe `token` (the path component of the public
+    `POST /api/webhooks/{token}/` URL) and a `secret` used to verify
+    `X-Offside-Signature: sha256=<hex>` over the raw request body.
+    `is_active=False` lets an admin disable an endpoint without losing
+    the URL — disabled endpoints return 403.
+    """
+
+    workspace = models.ForeignKey(
+        "workspaces.Workspace",
+        on_delete=models.CASCADE,
+        related_name="webhook_endpoints",
+    )
+    automation = models.ForeignKey(
+        Automation,
+        on_delete=models.CASCADE,
+        related_name="webhook_endpoints",
+    )
+
+    token = models.CharField(max_length=64, unique=True)
+    secret = models.CharField(max_length=128)
+    label = models.CharField(max_length=120, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="webhook_endpoints_created",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_fired_at = models.DateTimeField(null=True, blank=True)
+    fire_count = models.IntegerField(default=0)
+
+    objects = WorkspaceScopedManager()
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["workspace", "is_active"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"webhook {self.token[:8]}… → automation #{self.automation_id}"
+
+
 class AgentPolicy(models.Model):
     """Per-workspace action-mode mapping (PLAN.md §8.5)."""
 
