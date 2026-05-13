@@ -75,7 +75,7 @@ const ImportWizardInner = ({
     <div className="container-editorial section-rhythm space-y-10 py-12">
       <div>
         <Link href={`/${workspaceSlug}/${labelForEntity}`} className="link-tan text-sm">
-          ← {labelForEntity[0].toUpperCase() + labelForEntity.slice(1)}
+          ← {labelForEntity.charAt(0).toUpperCase() + labelForEntity.slice(1)}
         </Link>
       </div>
 
