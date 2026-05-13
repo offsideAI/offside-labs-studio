@@ -63,21 +63,31 @@ const MarketplaceGrid = ({ workspaceSlug }: { workspaceSlug: string }) => {
   );
 
   return (
-    <div className="mx-auto max-w-7xl px-6 pb-20 pt-12 md:px-10 md:pt-16">
-      {/* HERO — generous whitespace, full Styrene display, tan period. */}
-      <header className="space-y-5">
-        <Eyebrow>OffsideStudio · Product 01</Eyebrow>
-        <h1 className="font-styrene text-5xl font-bold tracking-tight md:text-7xl">
-          Agent Marketplace<span className="tan-period">.</span>
+    <div className="mx-auto max-w-7xl px-6 pb-24 pt-16 md:px-10 md:pt-24">
+      {/* HERO — Resend-inspired editorial serif, "announcing" pill, generous whitespace. */}
+      <header className="space-y-6">
+        {/* Announcing pill — pill-shaped chip with chevron, subtle border. */}
+        <a
+          href="#"
+          onClick={(e) => e.preventDefault()}
+          className="group inline-flex items-center gap-2 rounded-full border hairline bg-bone px-4 py-1.5 text-xs text-fg-muted transition-all duration-200 hover:border-tan hover:text-ink dark:bg-[var(--surface-elevated)]"
+        >
+          <span className="inline-flex h-1.5 w-1.5 rounded-full bg-tan" aria-hidden />
+          <span className="font-mono uppercase tracking-eyebrow text-tan-text">Announcing</span>
+          <span>Agent Marketplace v1 · 15 curated agents</span>
+          <span aria-hidden className="text-fg-muted transition-transform group-hover:translate-x-0.5">→</span>
+        </a>
+
+        {/* Editorial serif headline — Resend-style. Tan period preserved. */}
+        <h1 className="max-w-4xl font-serif text-5xl font-normal leading-[1.05] tracking-tight md:text-7xl">
+          Agents that ship your entire funnel<span className="tan-period">.</span>
         </h1>
-        <p className="max-w-2xl text-xl font-styrene font-bold leading-snug text-tan-text md:text-2xl">
-          One click installs your entire conversion funnel.
-        </p>
-        <p className="max-w-2xl text-base leading-relaxed text-fg-muted md:text-lg">
+
+        <p className="max-w-2xl text-lg leading-relaxed text-fg-muted md:text-xl">
           Curated agents spanning the full ecommerce lifecycle — lead capture,
           cart recovery, fulfillment, payments, customer service. Install one
-          with a click; customize every step in the Agent Design Studio;
-          watch every lead become a tracked conversion against your CRM.
+          with a click. Customize every step in the Agent Design Studio.
+          Every lead becomes a tracked conversion against your CRM.
         </p>
 
         {/* Stats strip — mono numbers, tabular. */}
@@ -190,7 +200,11 @@ const AgentCard = ({
   <li>
     <Link
       href={`/${workspaceSlug}/marketplace/${agent.slug}`}
-      className="group relative flex h-full min-h-[280px] flex-col rounded-md border hairline bg-bone p-6 shadow-soft-1 transition-all duration-300 ease-out-quint hover:-translate-y-0.5 hover:border-tan hover:shadow-soft-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan focus-visible:ring-offset-2"
+      // In light mode, soft shadow + lift on hover.
+      // In dark mode, the bone background flips to near-black; cards use
+      // the slightly-lighter --surface-elevated and gain a subtle tan glow
+      // on hover (Resend-style halo).
+      className="group relative flex h-full min-h-[280px] flex-col rounded-md border hairline bg-bone p-6 shadow-soft-1 transition-all duration-300 ease-out-quint hover:-translate-y-0.5 hover:border-tan hover:shadow-soft-3 dark:bg-[var(--surface-elevated)] dark:shadow-none dark:hover:shadow-[var(--glow-tan)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan focus-visible:ring-offset-2"
     >
       {/* Top row — icon + install count. */}
       <div className="flex items-start justify-between gap-3">

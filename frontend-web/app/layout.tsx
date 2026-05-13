@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Roboto, JetBrains_Mono } from "next/font/google";
+import { Roboto, JetBrains_Mono, Newsreader } from "next/font/google";
 
 import { Providers } from "./providers";
 import "./globals.css";
@@ -17,6 +17,32 @@ const jetbrains = JetBrains_Mono({
   display: "swap",
 });
 
+// Resend-inspired editorial serif. Variable font — we pull the full weight
+// axis so hero headlines can use 300/400/500/600 without separate requests.
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  style: ["normal", "italic"],
+  variable: "--font-newsreader",
+  display: "swap",
+});
+
+// Inline script that runs *before* React hydrates. Reads the persisted
+// theme from localStorage (or falls back to prefers-color-scheme) and
+// sets `data-theme` on <html> synchronously. Without this, the page
+// would flash light-then-dark on every cold load.
+const THEME_BOOTSTRAP = `
+  (function() {
+    try {
+      var stored = localStorage.getItem('offside-theme');
+      var theme = stored || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch (e) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  })();
+`;
+
 export const metadata: Metadata = {
   title: "OffsideStudio — Agent Marketplace",
   description:
@@ -28,7 +54,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${roboto.variable} ${jetbrains.variable}`}>
+    <html
+      lang="en"
+      // The bootstrap script overwrites this synchronously before paint.
+      // We default to dark here so SSR markup matches what the bootstrap
+      // emits for first-time visitors with no system preference.
+      data-theme="dark"
+      className={`${roboto.variable} ${jetbrains.variable} ${newsreader.variable} bg-render-dark`}
+      suppressHydrationWarning
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
+      </head>
       <body>
         <a className="skip-link" href="#main">
           Skip to content

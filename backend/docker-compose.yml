@@ -38,6 +38,11 @@ services:
       CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
     volumes:
       - .:/app
+      # Repo's tools/ dir (one level up from backend/) → /app/tools so
+      # seed scripts (`python -m tools.seeds.marketplace`) are importable
+      # inside the container. /app is the WORKDIR + cwd, automatically on
+      # sys.path, so `tools.*` resolves with no PYTHONPATH gymnastics.
+      - ../tools:/app/tools
     ports:
       - "8000:8000"
     depends_on:

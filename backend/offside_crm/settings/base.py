@@ -200,7 +200,12 @@ CACHES = {
 
 # --- allauth (account) ---
 
-ACCOUNT_LOGIN_METHODS = {"email"}
+# django-allauth 65.x renamed several account-config keys. We set BOTH
+# the new and legacy names so the system check (which still looks at
+# ACCOUNT_AUTHENTICATION_METHOD and defaults it to "username") doesn't
+# trip on our email-based custom User model lacking a username field.
+ACCOUNT_LOGIN_METHODS = {"email"}             # allauth 65+ name
+ACCOUNT_AUTHENTICATION_METHOD = "email"       # legacy name — still checked at boot
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = os.environ.get("ACCOUNT_EMAIL_VERIFICATION", "mandatory")
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
@@ -217,6 +222,12 @@ ACCOUNT_RATE_LIMITS = {
 
 REST_AUTH = {
     "USE_JWT": True,
+    # dj-rest-auth still tries to import the default DRF token model at
+    # boot unless we explicitly tell it not to. We're JWT-only, so this
+    # is None. Without this, Django fails to start with:
+    #   ImproperlyConfigured: You must include `rest_framework.authtoken`
+    #   in INSTALLED_APPS or set TOKEN_MODEL to None
+    "TOKEN_MODEL": None,
     "JWT_AUTH_COOKIE": "offside-auth",
     "JWT_AUTH_REFRESH_COOKIE": "offside-refresh",
     "JWT_AUTH_HTTPONLY": True,

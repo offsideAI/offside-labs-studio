@@ -10,6 +10,6 @@ pytest-django==4.9.0
 pytest-cov==6.0.0
 factory-boy==3.3.1
 
-ipython==8.31.0
+ipython>=8.18,<8.19   # last cp39-compatible series; the Docker image is on 3.12 + doesn't install this file
 django-debug-toolbar==4.4.6
 django-browser-reload==1.18.0

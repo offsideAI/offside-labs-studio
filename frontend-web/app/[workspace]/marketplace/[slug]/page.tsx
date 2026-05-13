@@ -133,7 +133,7 @@ const AgentDetail = ({
           </div>
           <div className="min-w-0 space-y-3 pt-1">
             <Eyebrow>{CATEGORY_LABEL[agent.category] ?? agent.category}</Eyebrow>
-            <h1 className="font-styrene text-4xl font-bold leading-tight tracking-tight md:text-5xl">
+            <h1 className="font-serif text-4xl font-normal leading-[1.05] tracking-tight md:text-6xl">
               {agent.name}<span className="tan-period">.</span>
             </h1>
             <p className="max-w-2xl text-base leading-relaxed text-fg-muted md:text-lg">

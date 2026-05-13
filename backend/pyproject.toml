@@ -1,3 +1,16 @@
+# Python version pin — coordinated across four places. Keep in sync:
+#   - backend/.python-version           → pyenv / asdf / mise auto-switch on cd
+#   - backend/Dockerfile                → `FROM python:3.12-slim`
+#   - .github/workflows/ci.yml          → setup-python python-version: "3.12"
+#   - [project] requires-python below   → pip refuses install on wrong interpreter
+# Plus the per-tool python_version pins on [tool.ruff] and [tool.mypy] below.
+
+[project]
+name = "offside-crm-backend"
+version = "0.0.0"
+description = "OffsideStudio — Agent Marketplace backend (Django + DRF + Celery + custom durable workflow runtime)."
+requires-python = ">=3.12,<3.14"
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"

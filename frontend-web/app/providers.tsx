@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 import { setAuthFailureHandler } from "../lib/api";
+import { ThemeProvider } from "../lib/theme";
 
 export const Providers = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
@@ -27,5 +28,9 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
     });
   }, [router]);
 
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  return (
+    <ThemeProvider>
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    </ThemeProvider>
+  );
 };

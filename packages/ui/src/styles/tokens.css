@@ -38,18 +38,49 @@
   }
 
   /*
-   * Scoped dark surfaces — applied per-section, not globally.
+   * Dark surface — Resend-inspired near-black aesthetic. Activated by
+   * setting [data-theme="dark"] on <html> (the ThemeProvider in
+   * frontend-web/lib/theme.tsx does this; remembers in localStorage; falls
+   * back to prefers-color-scheme on first load).
+   *
+   * **Token semantics flip** in dark: --brand-bone (the "primary surface"
+   * meaning) becomes near-black, --brand-ink (the "ink on surface" meaning)
+   * becomes near-bone. So existing `bg-bone` / `text-ink` Tailwind utilities
+   * auto-invert without per-component `dark:` overrides. Tan stays tan —
+   * it's the brand emphasis color in both modes — though we use the
+   * full-saturation hex on dark since the WCAG-safe tan-text contrast
+   * concern doesn't apply against a dark surface.
+   *
    * We deliberately do NOT set `color-scheme: dark` here. That property
    * triggers Chrome's auto-dark color inversion under Lighthouse even
    * though we set explicit author colors, which axe then misreads as a
-   * contrast failure. We control surface and text colors explicitly via
-   * Tailwind, so the UA hint is unnecessary and counter-productive.
+   * contrast failure. We control surface and text colors explicitly.
    */
   [data-theme="dark"] {
-    background: var(--brand-ink);
-    color: var(--brand-bone);
-    --brand-rule: rgba(241, 241, 241, 0.14);
-    --brand-muted: rgba(241, 241, 241, 0.72);
+    --brand-bone: #0a0a0a;            /* "primary surface" — near-black, Resend-style */
+    --brand-ink: #f1f1f1;             /* "ink on surface" — near-white */
+    --brand-tan-text: var(--brand-tan); /* dark mode shows full tan; contrast safe on near-black */
+    --brand-rule: rgba(241, 241, 241, 0.08);
+    --brand-muted: rgba(241, 241, 241, 0.62);
+
+    /* Dark-mode-only tokens — subtle glow and elevated surfaces. */
+    --surface-elevated: #131313;      /* card surfaces — barely lighter than bone */
+    --surface-overlay: rgba(241, 241, 241, 0.04); /* hover wash */
+    --glow-tan: 0 0 28px -8px rgba(201, 163, 137, 0.18); /* tan halo around primary CTAs */
+    --ring-soft: 0 0 0 1px rgba(241, 241, 241, 0.04) inset;
+
+    background: var(--brand-bone);
+    color: var(--brand-ink);
+  }
+
+  /* Light-mode-only fallbacks for the dark-only tokens — so any
+   * `bg-[var(--surface-elevated)]` or similar reference doesn't break in
+   * light mode. */
+  :root {
+    --surface-elevated: var(--brand-bone);
+    --surface-overlay: rgba(30, 30, 30, 0.04);
+    --glow-tan: 0 0 0 transparent;
+    --ring-soft: 0 0 0 1px rgba(30, 30, 30, 0.04) inset;
   }
 
   html {

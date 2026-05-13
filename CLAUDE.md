@@ -26,7 +26,7 @@ This is the Offside Studio Suite monorepo. The first product, **OffsideStudio �
 | Surface | Choice | Where |
 |---|---|---|
 | Web frontend | Next.js 15 + TypeScript strict (Vercel) | `frontend-web/` |
-| Backend + workflow runtime | Django 4.2 + DRF + Celery 5 + Redis (Digital Ocean App Platform) | `backend/` |
+| Backend + workflow runtime | **Python 3.12** + Django 4.2 + DRF + Celery 5 + Redis (Digital Ocean App Platform) | `backend/` |
 | iOS | SwiftUI 17+, xcodegen-generated project | `frontend-ios/` |
 | Suite placeholders | Next.js 10-line shells | `crunch-web/`, `design-web/`, `director-web/` |
 | Shared TS code | pnpm workspaces + Turborepo | `packages/{ui,ai,auth-utils,workflows-sdk,api-client,config}` |
@@ -88,6 +88,13 @@ pnpm format                     # prettier write
 - **Workspace-scoped data isolation** enforced at the Django ORM layer via `WorkspaceScopedMixin` + DRF permission class. Cross-workspace leakage is a critical security defect.
 - **A11y from day one** — keyboard nav (Cmd-K, j/k, /, esc), focus-visible 2px tan ring with 2px offset, skip-link, axe-clean smoke pass on every route.
 - **Stable IDs in docs** — never reuse a retired `FR-N` / `NFR-N` / `POST-N` / `TC-N` / `M-N` / `POST-N`. Append; don't recycle.
+- **Python 3.12 is pinned** in five coordinated places. If you bump the version, update all five:
+  1. `backend/.python-version` — pyenv / asdf / mise auto-switch on `cd`.
+  2. `backend/pyproject.toml` `[project] requires-python = ">=3.12,<3.14"` — pip refuses install on the wrong interpreter.
+  3. `backend/pyproject.toml` `[tool.ruff] target-version = "py312"` — modernization rules.
+  4. `backend/pyproject.toml` `[tool.mypy] python_version = "3.12"` — type-check version.
+  5. `backend/Dockerfile` — `FROM python:3.12-slim AS base`.
+  6. `.github/workflows/ci.yml` — `python-version: "3.12"`. (Six places total; the [project] requires-python is the load-bearing one because pip errors are loudest.)
 - **No mock data in production paths.** Seed scripts under `tools/seeds/` are fine; hard-coded fake data in components is not.
 - **Don't auto-create docs.** Do not add `.md` files unless the user explicitly requests them.
 

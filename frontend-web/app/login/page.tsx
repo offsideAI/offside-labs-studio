@@ -51,23 +51,33 @@ export default function LoginPage() {
             id="email"
             type="email"
             autoComplete="email"
+            placeholder="your@email.com"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="input"
+            className="w-full p-2.5 bg-[#0a0a0a] border border-gray-800 rounded-sm text-white placeholder-gray-600 focus:outline-none focus:border-render-purple transition-colors text-sm"
           />
         </Field>
         <Field label="Password" htmlFor="password">
-          <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            minLength={10}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="input"
-          />
+          <div className="relative">
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              placeholder="correct horse battery staple"
+              required
+              minLength={10}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-2.5 bg-[#0a0a0a] border border-gray-800 rounded-sm text-white placeholder-gray-600 focus:outline-none focus:border-render-purple transition-colors text-sm pr-10"
+            />
+            <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
         </Field>
 
         {error ? (
@@ -94,20 +104,6 @@ export default function LoginPage() {
       </p>
 
       <style jsx>{`
-        .input {
-          width: 100%;
-          padding: 0.625rem 0.75rem;
-          background: var(--brand-bone);
-          border: 1px solid var(--brand-rule);
-          border-radius: 4px;
-          color: var(--brand-ink);
-          font-family: var(--font-roboto), system-ui, sans-serif;
-          font-size: 0.95rem;
-        }
-        .input:focus-visible {
-          outline: 2px solid var(--brand-tan);
-          outline-offset: 2px;
-        }
         .button-primary {
           background: var(--brand-ink);
           color: var(--brand-bone);
@@ -141,7 +137,7 @@ const Field = ({
   children: React.ReactNode;
 }) => (
   <div className="space-y-1.5">
-    <label htmlFor={htmlFor} className="text-sm font-medium">
+    <label htmlFor={htmlFor} className="block text-xs font-medium text-gray-300">
       {label}
     </label>
     {children}

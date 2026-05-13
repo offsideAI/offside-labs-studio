@@ -30,11 +30,21 @@ import sys
 from datetime import date, timedelta
 from typing import Any
 
-# Make `apps.*` importable when run as `python -m tools.seeds.demo_workspace`
-# from the repo root or from inside the backend container.
-_BACKEND = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "backend")
-if _BACKEND not in sys.path:
-    sys.path.insert(0, _BACKEND)
+# Make `apps.*` importable in either execution context:
+#   1. **Repo root** (host) — `python -m tools.seeds.demo_workspace` from
+#      offside-labs-studio/. Django lives at offside-labs-studio/backend/.
+#   2. **Inside the web container** — `docker compose ... exec web python
+#      -m tools.seeds.demo_workspace`. Django lives at /app/ (the WORKDIR);
+#      tools/ is bind-mounted into /app/tools.
+# Pick whichever candidate has a `manage.py` adjacent.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+for _candidate in (
+    os.path.normpath(os.path.join(_HERE, "..", "..", "backend")),  # repo-root case
+    "/app",                                                         # container case
+):
+    if os.path.isfile(os.path.join(_candidate, "manage.py")) and _candidate not in sys.path:
+        sys.path.insert(0, _candidate)
+        break
 
 import django  # noqa: E402
 

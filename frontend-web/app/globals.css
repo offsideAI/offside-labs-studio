@@ -1,4 +1,10 @@
-@import "@offside/ui/styles/tokens.css";
+/* postcss-import does literal file-system lookups under node_modules/<pkg>/
+ * and does NOT honor the package.json "exports" field. The @offside/ui
+ * package's exports map at "./styles/tokens.css" → "./src/styles/tokens.css"
+ * works for Node.js / TS / bundlers that respect exports, but breaks here.
+ * Importing the literal path under src/ is the workaround.
+ */
+@import "@offside/ui/src/styles/tokens.css";
 @import "@xyflow/react/dist/style.css";
 
 @tailwind base;
@@ -8,6 +14,27 @@
 /* Product accent for OffsideStudio — Agent Marketplace (per PLAN.md §10) — warm clay. */
 :root {
   --product-secondary: #c98f89;
+}
+
+/* React Flow dark-mode overrides — the library ships light defaults that
+ * look broken on our near-black surface. Per @xyflow/react theming docs,
+ * setting these CSS vars on `.react-flow` is the supported way to
+ * recolor without forking. Only applied when the user has flipped to dark. */
+[data-theme="dark"] .react-flow {
+  --xy-background-color: var(--brand-bone);
+  --xy-background-color-default: var(--brand-bone);
+  --xy-edge-stroke-default: rgba(241, 241, 241, 0.22);
+  --xy-edge-stroke-selected-default: var(--brand-tan);
+  --xy-connectionline-stroke-default: var(--brand-tan);
+  --xy-attribution-background-color-default: transparent;
+  --xy-controls-button-background-color-default: var(--surface-elevated);
+  --xy-controls-button-background-color-hover-default: rgba(241, 241, 241, 0.06);
+  --xy-controls-button-color-default: var(--brand-ink);
+  --xy-controls-button-color-hover-default: var(--brand-tan);
+  --xy-controls-button-border-color-default: rgba(241, 241, 241, 0.08);
+  --xy-minimap-background-color-default: var(--surface-elevated);
+  --xy-minimap-mask-background-color-default: rgba(10, 10, 10, 0.72);
+  --xy-minimap-node-background-color-default: rgba(201, 163, 137, 0.6);
 }
 
 /* Shimmer skeleton — premium loading state. Subtle, slow, on-brand
@@ -33,10 +60,23 @@
   animation: shimmer 2.4s ease-in-out infinite;
 }
 
+[data-theme="dark"] .animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(241, 241, 241, 0.03) 0%,
+    rgba(201, 163, 137, 0.10) 50%,
+    rgba(241, 241, 241, 0.03) 100%
+  );
+  background-size: 1000px 100%;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-shimmer {
     animation: none;
     background: rgba(241, 241, 241, 0.6);
+  }
+  [data-theme="dark"] .animate-shimmer {
+    background: rgba(241, 241, 241, 0.04);
   }
 }
 

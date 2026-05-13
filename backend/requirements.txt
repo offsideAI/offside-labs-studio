@@ -12,6 +12,13 @@ whitenoise==6.8.2
 django-allauth==65.3.1
 dj-rest-auth==7.0.1
 djangorestframework-simplejwt==5.3.1
+# allauth's socialaccount OAuth2 provider unconditionally imports `requests`
+# at module-load time (it's listed as an optional extra in django-allauth's
+# packaging, but dj-rest-auth imports the OAuth2 provider unconditionally
+# during URL registration). Pin it here so the image has it.
+requests==2.32.3
+# allauth.account.middleware needs PyJWT for the headless flow we use.
+PyJWT==2.10.1
 
 # --- API schema ---
 drf-spectacular==0.28.0

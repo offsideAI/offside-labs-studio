@@ -1,4 +1,4 @@
-@import "@offside/ui/styles/tokens.css";
+@import "@offside/ui/src/styles/tokens.css";
 
 @tailwind base;
 @tailwind components;
