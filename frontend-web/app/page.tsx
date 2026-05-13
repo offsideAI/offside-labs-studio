@@ -89,8 +89,8 @@ export default function HomePage() {
                 </div>
                 <div className="h-6 w-full mt-2 relative">
                   <div className="absolute inset-x-0 bottom-0 border-b border-render-purple/30" />
-                  <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 20">
-                    <path d="M0,10 Q20,20 40,5 T60,15 T100,10" fill="none" stroke="var(--brand-tan)" strokeWidth="1.5" className="animate-pulse-glow" />
+                  <svg suppressHydrationWarning className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 20">
+                    <path suppressHydrationWarning d="M0,10 Q20,20 40,5 T60,15 T100,10" fill="none" stroke="#34d399" strokeWidth="1.5" className="animate-pulse-glow" />
                   </svg>
                 </div>
               </div>
@@ -103,8 +103,8 @@ export default function HomePage() {
                 </div>
                 <div className="h-6 w-full mt-2 relative">
                   <div className="absolute inset-x-0 bottom-0 border-b border-render-purple/30" />
-                  <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 20">
-                    <path d="M0,15 Q30,5 50,15 T80,5 T100,15" fill="none" stroke="#9b51e0" strokeWidth="1.5" className="animate-pulse-glow" />
+                  <svg suppressHydrationWarning className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 20">
+                    <path suppressHydrationWarning d="M0,15 Q30,5 50,15 T80,5 T100,15" fill="none" stroke="#9b51e0" strokeWidth="1.5" className="animate-pulse-glow" />
                   </svg>
                 </div>
               </div>
@@ -163,7 +163,7 @@ export default function HomePage() {
               <span className="text-xl">🛒</span>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-white">Smart Cart Recovery</span>
-                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">Stacked</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">OffsideAI</span>
               </div>
             </div>
           </div>
@@ -205,7 +205,7 @@ export default function HomePage() {
               <span className="text-xl">🛒</span>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-white">Smart Cart Recovery</span>
-                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">Stacked</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">OffsideAI</span>
               </div>
             </div>
           </div>

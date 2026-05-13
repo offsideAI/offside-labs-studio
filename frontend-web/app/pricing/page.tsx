@@ -61,40 +61,39 @@ export default function PricingPage() {
           {/* Pricing Grid */}
           <div className="grid md:grid-cols-3 gap-0 border-t border-l border-gray-800">
             
-            {/* Pro Tier */}
-            <div className="border-r border-b border-gray-800 bg-[#0a0a0a]/80 backdrop-blur-sm flex flex-col group transition-colors">
-              <div className="bg-[#123E1E] p-8 h-40">
-                <h3 className="text-2xl font-semibold mb-3">Pro</h3>
-                <p className="text-gray-300 text-sm leading-relaxed pr-4">For individuals and small teams exploring open models.</p>
+            {/* Pro Tier (Free) */}
+            <div className="border-r border-b border-gray-800 bg-[#0a0a0a] flex flex-col group transition-colors">
+              <div className="bg-[#0f2e53] p-6 h-20 flex items-center">
+                <h3 className="text-xl font-normal text-white">Pro</h3>
               </div>
-              <div className="p-8 flex-grow">
+              <div className="p-8 flex-grow flex flex-col">
+                <p className="text-gray-300 text-sm leading-relaxed mb-10 h-10">For individuals and small teams exploring open models.</p>
                 <div className="flex items-baseline gap-1 mb-8">
-                  <span className="text-4xl font-semibold">$250</span>
-                  <span className="text-gray-400 text-sm">/mo</span>
+                  <span className="text-3xl font-normal text-white">$0/mo</span>
                 </div>
-                <Link href="/signup?plan=pro" className="block w-full text-center bg-render-green hover:bg-[#5cff8f] text-black font-semibold py-3 px-4 rounded-sm transition-colors mb-10 flex items-center justify-between">
+                <Link href="/signup?plan=pro" className="block w-full text-center bg-[#5bb2ff] hover:bg-[#8ccaff] text-black text-sm py-2.5 px-4 rounded-sm transition-colors mb-10 flex items-center justify-between">
                   <span>Get Started Free</span>
                   <span>&rarr;</span>
                 </Link>
                 <ul className="space-y-4 text-sm text-gray-300">
                   <li className="flex items-start gap-3">
-                    <span className="text-render-green mt-0.5">✓</span>
+                    <span className="text-gray-500 mt-0.5">•</span>
                     <span>Access to 50+ open-source models</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-render-green mt-0.5">✓</span>
+                    <span className="text-gray-500 mt-0.5">•</span>
                     <span>1,000 requests per month</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-render-green mt-0.5">✓</span>
+                    <span className="text-gray-500 mt-0.5">•</span>
                     <span>Community Discord support</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-render-green mt-0.5">✓</span>
+                    <span className="text-gray-500 mt-0.5">•</span>
                     <span>Standard latency SLA</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-render-green mt-0.5">✓</span>
+                    <span className="text-gray-500 mt-0.5">•</span>
                     <span>1 GB Vector Storage</span>
                   </li>
                 </ul>
@@ -102,46 +101,43 @@ export default function PricingPage() {
             </div>
 
             {/* Ultra Tier */}
-            <div className="border-r border-b border-gray-800 bg-[#0a0a0a]/80 backdrop-blur-sm flex flex-col group transition-colors relative">
-              <div className="absolute top-0 right-0 bg-render-purple text-white text-[10px] font-bold px-3 py-1 uppercase tracking-widest rounded-bl-sm z-10">
-                Most Popular
+            <div className="border-r border-b border-gray-800 bg-[#0a0a0a] flex flex-col group transition-colors relative">
+              <div className="bg-[#3D1466] p-6 h-20 flex items-center">
+                <h3 className="text-xl font-normal text-white">Ultra</h3>
               </div>
-              <div className="bg-[#3D1466] p-8 h-40">
-                <h3 className="text-2xl font-semibold mb-3">Ultra</h3>
-                <p className="text-gray-300 text-sm leading-relaxed pr-4">For growing startups and production deployments.</p>
-              </div>
-              <div className="p-8 flex-grow">
+              <div className="p-8 flex-grow flex flex-col">
+                <p className="text-gray-300 text-sm leading-relaxed mb-10 h-10">For growing startups and production deployments.</p>
                 <div className="flex items-baseline gap-1 mb-8">
-                  <span className="text-4xl font-semibold">$2500</span>
-                  <span className="text-gray-400 text-sm">/mo</span>
+                  <span className="text-3xl font-normal text-white">$250/mo</span>
+                  <span className="text-gray-400 text-xs ml-1">+ compute</span>
                 </div>
-                <Link href="/signup?plan=ultra" className="block w-full text-center bg-[#b870f4] hover:bg-[#c991f6] text-black font-semibold py-3 px-4 rounded-sm transition-colors mb-10 flex items-center justify-between">
+                <Link href="/signup?plan=ultra" className="block w-full text-center bg-[#b870f4] hover:bg-[#c991f6] text-black text-sm py-2.5 px-4 rounded-sm transition-colors mb-10 flex items-center justify-between">
                   <span>Start 14-Day Trial</span>
                   <span>&rarr;</span>
                 </Link>
                 <ul className="space-y-4 text-sm text-gray-300">
                   <li className="flex items-start gap-3">
-                    <span className="text-[#b870f4] mt-0.5">✓</span>
+                    <span className="text-gray-500 mt-0.5">•</span>
                     <span>Uncapped model requests</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-[#b870f4] mt-0.5">✓</span>
+                    <span className="text-gray-500 mt-0.5">•</span>
                     <span>Sub-50ms latency globally</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-[#b870f4] mt-0.5">✓</span>
+                    <span className="text-gray-500 mt-0.5">•</span>
                     <span>Priority email support</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-[#b870f4] mt-0.5">✓</span>
+                    <span className="text-gray-500 mt-0.5">•</span>
                     <span>Custom domain integration</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-[#b870f4] mt-0.5">✓</span>
+                    <span className="text-gray-500 mt-0.5">•</span>
                     <span>100 GB Vector Storage</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-[#b870f4] mt-0.5">✓</span>
+                    <span className="text-gray-500 mt-0.5">•</span>
                     <span>Visual Pipeline Builder</span>
                   </li>
                 </ul>
@@ -149,42 +145,42 @@ export default function PricingPage() {
             </div>
 
             {/* Enterprise Tier */}
-            <div className="border-r border-b border-gray-800 bg-[#0a0a0a]/80 backdrop-blur-sm flex flex-col group transition-colors">
-              <div className="bg-[#2A2A2A] p-8 h-40">
-                <h3 className="text-2xl font-semibold mb-3">Enterprise</h3>
-                <p className="text-gray-300 text-sm leading-relaxed pr-4">For large organizations with strict compliance and scale needs.</p>
+            <div className="border-r border-b border-gray-800 bg-[#0a0a0a] flex flex-col group transition-colors">
+              <div className="bg-[#2A2A2A] p-6 h-20 flex items-center">
+                <h3 className="text-xl font-normal text-white">Enterprise</h3>
               </div>
-              <div className="p-8 flex-grow">
+              <div className="p-8 flex-grow flex flex-col">
+                <p className="text-gray-300 text-sm leading-relaxed mb-10 h-10">For large organizations with strict compliance and scale needs.</p>
                 <div className="flex items-baseline gap-1 mb-8">
-                  <span className="text-4xl font-semibold">Custom pricing</span>
+                  <span className="text-3xl font-normal text-white">Custom pricing</span>
                 </div>
-                <Link href="/contact" className="block w-full text-center bg-gray-300 hover:bg-white text-black font-semibold py-3 px-4 rounded-sm transition-colors mb-10 flex items-center justify-between">
+                <Link href="/contact" className="block w-full text-center bg-[#e5e5e5] hover:bg-white text-black text-sm py-2.5 px-4 rounded-sm transition-colors mb-10 flex items-center justify-between">
                   <span>Contact Sales</span>
                   <span>&rarr;</span>
                 </Link>
                 <ul className="space-y-4 text-sm text-gray-300">
                   <li className="flex items-start gap-3">
-                    <span className="text-gray-400 mt-0.5">✓</span>
+                    <span className="text-gray-500 mt-0.5">•</span>
                     <span>VPC Peering & Single-Tenant deployments</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-gray-400 mt-0.5">✓</span>
+                    <span className="text-gray-500 mt-0.5">•</span>
                     <span>SOC2 / HIPAA / GDPR compliance</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-gray-400 mt-0.5">✓</span>
+                    <span className="text-gray-500 mt-0.5">•</span>
                     <span>Dedicated Account Manager</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-gray-400 mt-0.5">✓</span>
+                    <span className="text-gray-500 mt-0.5">•</span>
                     <span>99.99% Uptime SLA</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-gray-400 mt-0.5">✓</span>
+                    <span className="text-gray-500 mt-0.5">•</span>
                     <span>Unlimited Vector Storage</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-gray-400 mt-0.5">✓</span>
+                    <span className="text-gray-500 mt-0.5">•</span>
                     <span>SSO / SAML integration</span>
                   </li>
                 </ul>
