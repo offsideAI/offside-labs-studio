@@ -13,11 +13,28 @@ interface NavItem {
   comingSoon?: boolean;
 }
 
+// OffsideStudio — Agent Marketplace positioning: the two hero surfaces
+// (Marketplace + Agent Design Studio) sit at the top of the primary nav,
+// above the CRM record entries. CRM records are the data layer the
+// agents act on — useful, but not the headline. See MEMORY.md "Product
+// positioning" for why.
 const NAV: NavItem[] = [
   {
     label: "Home",
     href: (slug) => `/${slug}`,
     match: (pathname, slug) => pathname === `/${slug}`,
+  },
+  {
+    label: "Agent Marketplace",
+    href: (slug) => `/${slug}/marketplace`,
+    match: (pathname, slug) => pathname.startsWith(`/${slug}/marketplace`),
+    badge: "★★",
+  },
+  {
+    label: "Agent Design Studio",
+    href: (slug) => `/${slug}/automations`,
+    match: (pathname, slug) => pathname.startsWith(`/${slug}/automations`),
+    badge: "★",
   },
   {
     label: "Contacts",
@@ -40,11 +57,6 @@ const NAV: NavItem[] = [
     match: (pathname, slug) => pathname.startsWith(`/${slug}/tasks`),
     comingSoon: true,
     badge: "M5+",
-  },
-  {
-    label: "Automations",
-    href: (slug) => `/${slug}/automations`,
-    match: (pathname, slug) => pathname.startsWith(`/${slug}/automations`),
   },
 ];
 

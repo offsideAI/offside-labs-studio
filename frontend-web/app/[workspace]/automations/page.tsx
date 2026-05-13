@@ -53,23 +53,32 @@ const AutomationsList = ({
     <div className="space-y-6 px-6 py-8">
       <header className="flex items-end justify-between gap-4">
         <div>
-          <Eyebrow>Workflows</Eyebrow>
+          <Eyebrow>OffsideStudio</Eyebrow>
           <h1 className="mt-2 text-4xl font-styrene font-bold tracking-tight md:text-5xl">
-            Automations<span className="tan-period">.</span>
+            Agent Design Studio<span className="tan-period">.</span>
           </h1>
           <p className="mt-2 max-w-prose text-sm text-fg-muted">
-            Visual node-graph workflows powered by the durable Celery runtime.
-            Draft, publish a version, and watch runs execute.
+            Design, customize, and observe every agent in your workspace.
+            Start from the Agent Marketplace, describe an agent in English,
+            or build one from scratch on the canvas.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onNew}
-          disabled={createAutomation.isPending}
-          className="inline-flex h-10 items-center rounded-sm border border-ink bg-ink px-4 text-sm font-bold text-bone hover:bg-ink-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan focus-visible:ring-offset-2 disabled:opacity-50"
-        >
-          {createAutomation.isPending ? "Creating…" : "+ New workflow"}
-        </button>
+        <div className="flex items-end gap-2">
+          <Link
+            href={`/${workspaceSlug}/marketplace`}
+            className="inline-flex h-10 items-center rounded-sm border hairline bg-bone px-4 text-sm font-medium hover:border-tan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan"
+          >
+            Browse Marketplace
+          </Link>
+          <button
+            type="button"
+            onClick={onNew}
+            disabled={createAutomation.isPending}
+            className="inline-flex h-10 items-center rounded-sm border border-ink bg-ink px-4 text-sm font-bold text-bone hover:bg-ink-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan focus-visible:ring-offset-2 disabled:opacity-50"
+          >
+            {createAutomation.isPending ? "Creating…" : "+ Blank workflow"}
+          </button>
+        </div>
       </header>
 
       <Hairline />
@@ -77,7 +86,11 @@ const AutomationsList = ({
       {automations.isLoading ? (
         <p className="text-fg-muted">Loading…</p>
       ) : list.length === 0 ? (
-        <EmptyState onNew={onNew} disabled={createAutomation.isPending} />
+        <EmptyState
+          onNew={onNew}
+          disabled={createAutomation.isPending}
+          workspaceSlug={workspaceSlug}
+        />
       ) : (
         <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {list.map((a) => (
@@ -89,22 +102,42 @@ const AutomationsList = ({
   );
 };
 
-const EmptyState = ({ onNew, disabled }: { onNew: () => void; disabled: boolean }) => (
-  <div className="rounded-sm border hairline bg-bone p-8 text-center">
-    <Eyebrow>Get started</Eyebrow>
-    <p className="mt-2 text-sm text-fg-muted">
-      You don't have any workflows yet. Build one visually — drag nodes onto
-      the canvas, connect them, publish a version, and runs go through the
-      durable Celery runtime.
+const EmptyState = ({
+  onNew,
+  disabled,
+  workspaceSlug,
+}: {
+  onNew: () => void;
+  disabled: boolean;
+  workspaceSlug: string;
+}) => (
+  <div className="rounded-sm border hairline bg-bone p-10 text-center">
+    <Eyebrow>OffsideStudio · Get started</Eyebrow>
+    <h2 className="mt-3 font-styrene text-2xl font-bold">
+      Install your first agent from the Marketplace<span className="tan-period">.</span>
+    </h2>
+    <p className="mt-3 mx-auto max-w-xl text-sm text-fg-muted">
+      The fastest path to a running workflow: pick a pre-built agent from
+      the Agent Marketplace and install it in one click. It lands here as
+      an editable, published workflow. You can also describe an agent in
+      English to Claude, or build one from scratch on the canvas.
     </p>
-    <button
-      type="button"
-      onClick={onNew}
-      disabled={disabled}
-      className="mt-4 inline-flex h-10 items-center rounded-sm border border-ink bg-ink px-4 text-sm font-bold text-bone hover:bg-ink-700 disabled:opacity-50"
-    >
-      Create the first workflow
-    </button>
+    <div className="mt-6 flex items-center justify-center gap-2">
+      <Link
+        href={`/${workspaceSlug}/marketplace`}
+        className="inline-flex h-11 items-center rounded-sm border border-ink bg-ink px-5 text-sm font-bold text-bone hover:bg-ink-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan focus-visible:ring-offset-2"
+      >
+        Open the Marketplace
+      </Link>
+      <button
+        type="button"
+        onClick={onNew}
+        disabled={disabled}
+        className="inline-flex h-11 items-center rounded-sm border hairline bg-bone px-5 text-sm font-medium hover:border-tan disabled:opacity-50"
+      >
+        Or start with a blank canvas
+      </button>
+    </div>
   </div>
 );
 

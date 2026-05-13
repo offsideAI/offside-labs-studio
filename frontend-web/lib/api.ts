@@ -1171,4 +1171,75 @@ export const useCancelAutomationRun = (workspaceId: number | null | undefined) =
   });
 };
 
+// --- M9.S4: Agents Marketplace ---
+
+export type MarketplaceAgentCategory =
+  | "lead_management"
+  | "deal_hygiene"
+  | "comms"
+  | "integrations"
+  | "operations";
+
+export interface MarketplaceAgentSummary {
+  id: number;
+  slug: string;
+  name: string;
+  description: string;
+  category: MarketplaceAgentCategory;
+  icon_emoji: string;
+  author: string;
+  install_count: number;
+  published_at: string;
+}
+
+export interface MarketplaceAgentDetail extends MarketplaceAgentSummary {
+  long_description: string;
+  graph: AutomationGraph;
+  trigger: Record<string, unknown>;
+  updated_at: string;
+}
+
+export interface InstallResponse {
+  automation_id: number;
+  automation_name: string;
+  version_number: number;
+  install_id: number;
+}
+
+// Marketplace catalog list + detail are anon-readable, so we don't pass a
+// workspaceId / Authorization header on those requests.
+export const useMarketplaceAgents = (category?: MarketplaceAgentCategory) =>
+  useQuery({
+    queryKey: ["marketplace-agents", category ?? null],
+    queryFn: () =>
+      fetcher.authFetch<Paginated<MarketplaceAgentSummary>>(
+        category
+          ? `/api/marketplace/agents/?category=${category}`
+          : "/api/marketplace/agents/",
+      ),
+  });
+
+export const useMarketplaceAgent = (slug: string | null | undefined) =>
+  useQuery({
+    queryKey: ["marketplace-agent", slug],
+    queryFn: () =>
+      fetcher.authFetch<MarketplaceAgentDetail>(`/api/marketplace/agents/${slug}/`),
+    enabled: Boolean(slug),
+  });
+
+export const useInstallMarketplaceAgent = (workspaceId: number | null | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (slug: string) =>
+      fetcher.authFetch<InstallResponse>(`/api/marketplace/agents/${slug}/install/`, {
+        method: "POST",
+        workspaceId: workspaceId ?? undefined,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["automations", workspaceId] });
+      qc.invalidateQueries({ queryKey: ["marketplace-agents"] });
+    },
+  });
+};
+
 export { AuthFetchError };

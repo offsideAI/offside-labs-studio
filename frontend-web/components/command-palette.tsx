@@ -63,8 +63,12 @@ export const CommandPalette = ({ open, onOpenChange, workspaces, activeSlug }: C
               <span>Deals</span>
               <span className="cmdk-hint">{`/${activeSlug}/deals`}</span>
             </Command.Item>
+            <Command.Item onSelect={() => navigate(`/${activeSlug}/marketplace`)} className="cmdk-item">
+              <span>Agent Marketplace</span>
+              <span className="cmdk-hint">{`/${activeSlug}/marketplace`}</span>
+            </Command.Item>
             <Command.Item onSelect={() => navigate(`/${activeSlug}/automations`)} className="cmdk-item">
-              <span>Automations</span>
+              <span>Agent Design Studio</span>
               <span className="cmdk-hint">{`/${activeSlug}/automations`}</span>
             </Command.Item>
             <Command.Item onSelect={() => navigate(`/${activeSlug}/settings`)} className="cmdk-item">

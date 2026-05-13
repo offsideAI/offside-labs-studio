@@ -7,7 +7,7 @@
 **OffsideStudio — Agent Marketplace** is the default selling proposition. The product leads with two hero surfaces:
 
 - **★★ Agents Marketplace** (FR-26 / M9.S4) — curated catalog of pre-built workflow agents. One-click install creates an editable, immediately-runnable workflow in the workspace. This is the headline of the product.
-- **★ Agents Design Studio** (FR-12 / M8 — formerly "Workflow node-graph editor") — visual canvas + run inspector + describe-in-English authoring. Where every installed agent opens for customization.
+- **★ Agent Design Studio** (FR-12 / M8 — formerly "Workflow node-graph editor") — visual canvas + run inspector + describe-in-English authoring. Where every installed agent opens for customization.
 
 CRM record views (contacts/companies/deals/tasks/notes/activities) are the underlying data layer the agents act on, not the headline. Primary navigation should put Marketplace + Studio above the CRM record entries.
 

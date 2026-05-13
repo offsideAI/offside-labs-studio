@@ -2,7 +2,7 @@
 
 > User-perspective end-to-end test scenarios for **OffsideStudio — Agent Marketplace**. Each case is written as steps a real user would perform, not as a unit test. IDs are stable (`TC-N`); cross-references to [PRD.md](./PRD.md) functional requirements are noted as `FR-N`.
 >
-> **Hero-surface TCs** for demo coverage: TC-29..TC-32 (Agents Design Studio, FR-12) and TC-92..TC-94 (Agents Marketplace, FR-26). The rest are foundational.
+> **Hero-surface TCs** for demo coverage: TC-29..TC-32 (Agent Design Studio, FR-12) and TC-92..TC-94 (Agents Marketplace, FR-26). The rest are foundational.
 
 **Purpose:** acceptance gate for milestones, manual QA scripts, and the source list for automated E2E coverage (Playwright on web; XCUITest on iOS).
 **Owner:** Offside Labs.
