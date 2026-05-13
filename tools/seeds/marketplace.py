@@ -32,6 +32,241 @@ from apps.marketplace.models import MarketplaceAgent, MarketplaceAgentCategory  
 
 
 SEED_AGENTS: list[dict[str, Any]] = [
+    # 0. ★★★ HERO AGENT — Ecommerce Conversion Funnel Optimizer.
+    #
+    # The demo opener. A single agent that *choreographs* the entire
+    # AEO → ads → landing → email → cart-recovery → payments funnel.
+    # 9 nodes; every node is inspectable + costed; every CRM record
+    # the agent creates is visible to the audience by switching to
+    # /companies and /tasks during the demo.
+    #
+    # Trigger is manual so the presenter can fire it live with one
+    # click of the Run button. trigger_payload is empty — the agent
+    # doesn't depend on any external data; the value is the
+    # choreography itself.
+    {
+        "slug": "ecommerce-conversion-funnel-optimizer",
+        "name": "Ecommerce Conversion Funnel Optimizer",
+        "icon_emoji": "🚀",
+        "category": MarketplaceAgentCategory.LEAD_MANAGEMENT,
+        "description": (
+            "One agent. Whole funnel. Marketing campaign launch → AEO content "
+            "seed → ad-platform sync → landing-page generation → email "
+            "welcome → cart recovery → payments confirmation. Every lead "
+            "pulled in becomes a converted paying customer."
+        ),
+        "long_description": (
+            "Install + run this agent to deploy a full ecommerce conversion "
+            "funnel in one go. The 10-node graph orchestrates: (1) marketing "
+            "campaign launch across email + social + search + display, (2) "
+            "AEO content seed via your answer-engine partner, (3) ad-platform "
+            "campaign sync, (4) landing-page generation, (5) a placeholder "
+            "Demo Funnel company record, (6) email welcome series task, "
+            "(7) abandoned-cart recovery task, (8) post-purchase confirm "
+            "task, (9) deployment-summary note. Each node's output feeds "
+            "the next via {{ n<N>.<field> }} templating, so the audience "
+            "can watch one click create the scaffolding of an entire "
+            "funnel. After install, the same 10-node graph is editable in "
+            "the Agent Design Studio — swap any node for a real integration "
+            "(your real campaign orchestrator, your real AEO endpoint, your "
+            "real ad platform, your real ESP)."
+        ),
+        "trigger": {"type": "manual"},
+        "graph": {
+            "start_node_id": "n1",
+            "nodes": {
+                "n1": {
+                    "type": "action",
+                    "label": "Initialize funnel",
+                    "config": {
+                        "action": "log",
+                        "input": {
+                            "message": "🚀 ecommerce funnel optimization starting",
+                            "phase": "init",
+                        },
+                    },
+                    "next": "n2",
+                    "position": {"x": 40, "y": 80},
+                },
+                "n2": {
+                    "type": "action",
+                    "label": "Launch marketing campaign",
+                    "config": {
+                        "action": "crm.http.request",
+                        "input": {
+                            "url": "https://httpbin.org/post",
+                            "method": "POST",
+                            "body": {
+                                "kind": "marketing_campaign_launch",
+                                "campaign_name": "Acme Q3 conversion funnel",
+                                "channels": ["email", "social", "search", "display"],
+                                "budget_cents": 1_000_000,
+                                "target_audience": "ecommerce_shoppers_us_dach",
+                                "launch_window_days": 90,
+                            },
+                        },
+                    },
+                    "next": "n3",
+                    "position": {"x": 320, "y": 80},
+                },
+                "n3": {
+                    "type": "action",
+                    "label": "Seed AEO answer content",
+                    "config": {
+                        "action": "crm.http.request",
+                        "input": {
+                            "url": "https://httpbin.org/post",
+                            "method": "POST",
+                            "body": {
+                                "kind": "aeo_content_seed",
+                                "linked_to_campaign_status": "{{ n2.status_code }}",
+                                "topics": [
+                                    "best ecommerce platform",
+                                    "fastest checkout flow",
+                                    "abandoned-cart recovery best practices",
+                                ],
+                                "target_engines": ["chatgpt", "perplexity", "claude"],
+                            },
+                        },
+                    },
+                    "next": "n4",
+                    "position": {"x": 600, "y": 80},
+                },
+                "n4": {
+                    "type": "action",
+                    "label": "Sync ad campaigns",
+                    "config": {
+                        "action": "crm.http.request",
+                        "input": {
+                            "url": "https://httpbin.org/post",
+                            "method": "POST",
+                            "body": {
+                                "kind": "ad_campaign_sync",
+                                "platforms": ["google_ads", "meta_ads", "tiktok_ads"],
+                                "linked_to_aeo_status": "{{ n3.status_code }}",
+                            },
+                        },
+                    },
+                    "next": "n5",
+                    "position": {"x": 880, "y": 80},
+                },
+                "n5": {
+                    "type": "action",
+                    "label": "Generate landing pages",
+                    "config": {
+                        "action": "crm.http.request",
+                        "input": {
+                            "url": "https://httpbin.org/post",
+                            "method": "POST",
+                            "body": {
+                                "kind": "landing_page_generation",
+                                "variants": 3,
+                                "split_test_traffic": [40, 40, 20],
+                            },
+                        },
+                    },
+                    "next": "n6",
+                    "position": {"x": 880, "y": 280},
+                },
+                "n6": {
+                    "type": "action",
+                    "label": "Create funnel company record",
+                    "config": {
+                        "action": "crm.create_company",
+                        "input": {
+                            "name": "Acme Demo Funnel · {{ n2.status_code }}",
+                            "domain": "demo-funnel.example",
+                            "industry": "Ecommerce",
+                            "size_band": "11-50",
+                            "created_by_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "n7",
+                    "position": {"x": 600, "y": 280},
+                },
+                "n7": {
+                    "type": "action",
+                    "label": "Queue email welcome series",
+                    "config": {
+                        "action": "crm.create_task",
+                        "input": {
+                            "title": "📧 Send welcome email (Day 0)",
+                            "description": "Auto-deployed by Funnel Optimizer. Personalize subject line per AEO topic.",
+                            "related_type": "company",
+                            "related_id": "{{ n6.company_id }}",
+                            "priority": "high",
+                            "created_by_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "n8",
+                    "position": {"x": 320, "y": 280},
+                },
+                "n8": {
+                    "type": "action",
+                    "label": "Queue cart-recovery sequence",
+                    "config": {
+                        "action": "crm.create_task",
+                        "input": {
+                            "title": "🛒 Configure abandoned-cart recovery",
+                            "description": "Auto-deployed by Funnel Optimizer. Trigger at 30 min + 2 hr + 24 hr cart-idle.",
+                            "related_type": "company",
+                            "related_id": "{{ n6.company_id }}",
+                            "priority": "high",
+                            "created_by_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "n9",
+                    "position": {"x": 40, "y": 280},
+                },
+                "n9": {
+                    "type": "action",
+                    "label": "Queue payment confirmation",
+                    "config": {
+                        "action": "crm.create_task",
+                        "input": {
+                            "title": "💳 Wire payment-success confirmations",
+                            "description": "Auto-deployed by Funnel Optimizer. Point Stripe webhook at the Payment success agent's URL.",
+                            "related_type": "company",
+                            "related_id": "{{ n6.company_id }}",
+                            "priority": "medium",
+                            "created_by_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "n10",
+                    "position": {"x": 40, "y": 480},
+                },
+                "n10": {
+                    "type": "action",
+                    "label": "Log deployment summary",
+                    "config": {
+                        "action": "crm.create_note",
+                        "input": {
+                            "body_md": (
+                                "## 🚀 Funnel deployed\n\n"
+                                "**Auto-orchestrated by the Ecommerce Conversion Funnel Optimizer agent.**\n\n"
+                                "Deployed in this run:\n"
+                                "- ✅ Marketing campaign launched → email · social · search · display\n"
+                                "- ✅ AEO content seed → ChatGPT / Perplexity / Claude\n"
+                                "- ✅ Ad campaign sync → Google / Meta / TikTok\n"
+                                "- ✅ Landing pages → 3-variant split test\n"
+                                "- ✅ Email welcome series queued\n"
+                                "- ✅ Cart-recovery sequence queued\n"
+                                "- ✅ Payment confirmations queued\n\n"
+                                "Every lead pulled into this funnel becomes a tracked conversion."
+                            ),
+                            "related_type": "company",
+                            "related_id": "{{ n6.company_id }}",
+                            "author_id": "__INSTALLER__",
+                        },
+                    },
+                    "next": "end",
+                    "position": {"x": 320, "y": 480},
+                },
+                "end": {"type": "end", "position": {"x": 600, "y": 480}},
+            },
+        },
+    },
+
     # 1. Lead qualification — fires on new contact, branches on lifecycle
     # stage, creates a high-priority task.
     {
