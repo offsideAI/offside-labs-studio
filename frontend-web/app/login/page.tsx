@@ -8,6 +8,14 @@ import * as React from "react";
 import { useLogin, useWorkspaces } from "../../lib/api";
 
 export default function LoginPage() {
+  return (
+    <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <LoginForm />
+    </React.Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
