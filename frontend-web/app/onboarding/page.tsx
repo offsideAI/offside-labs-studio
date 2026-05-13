@@ -35,13 +35,13 @@ const OnboardingForm = () => {
 
   return (
     <div className="container-editorial section-rhythm max-w-xl">
-      <Eyebrow>Offside CRM · Set up your workspace</Eyebrow>
+      <Eyebrow>OffsideStudio · Set up your workspace</Eyebrow>
       <h1 className="mt-4 text-4xl font-styrene font-bold tracking-tight md:text-5xl">
         One last step<span className="tan-period">.</span>
       </h1>
       <p className="mt-6 text-fg-muted">
-        A workspace holds your team&rsquo;s contacts, deals, and automations. You can rename it
-        later from settings.
+        A workspace holds your team&rsquo;s contacts, deals, and agents. You can install pre-built
+        agents from the Marketplace right after this. Rename later from settings.
       </p>
 
       <form onSubmit={onSubmit} className="mt-8 space-y-4">

@@ -43,7 +43,7 @@ export default function SignupPage() {
   if (done) {
     return (
       <div className="container-editorial section-rhythm max-w-md">
-        <Eyebrow>Offside CRM · Verify your email</Eyebrow>
+        <Eyebrow>OffsideStudio · Verify your email</Eyebrow>
         <h1 className="mt-4 text-4xl font-styrene font-bold tracking-tight md:text-5xl">
           Check your inbox<span className="tan-period">.</span>
         </h1>
@@ -62,7 +62,7 @@ export default function SignupPage() {
 
   return (
     <div className="container-editorial section-rhythm max-w-md">
-      <Eyebrow>Offside CRM · Create account</Eyebrow>
+      <Eyebrow>OffsideStudio · Create account</Eyebrow>
       <h1 className="mt-4 text-4xl font-styrene font-bold tracking-tight md:text-5xl">
         Start free<span className="tan-period">.</span>
       </h1>

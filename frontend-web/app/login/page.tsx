@@ -40,7 +40,7 @@ export default function LoginPage() {
 
   return (
     <div className="container-editorial section-rhythm max-w-md">
-      <Eyebrow>Offside CRM · Sign in</Eyebrow>
+      <Eyebrow>OffsideStudio · Sign in</Eyebrow>
       <h1 className="mt-4 text-4xl font-styrene font-bold tracking-tight md:text-5xl">
         Welcome back<span className="tan-period">.</span>
       </h1>

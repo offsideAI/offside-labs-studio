@@ -5,9 +5,50 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Product accent for Offside CRM (per PLAN.md §10) — warm clay. */
+/* Product accent for OffsideStudio — Agent Marketplace (per PLAN.md §10) — warm clay. */
 :root {
   --product-secondary: #c98f89;
+}
+
+/* Shimmer skeleton — premium loading state. Subtle, slow, on-brand
+   (bone → tan-50 → bone gradient sweep). Used on the Marketplace grid +
+   detail loading states. Respects prefers-reduced-motion. */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(241, 241, 241, 0.6) 0%,
+    rgba(240, 223, 208, 0.5) 50%,
+    rgba(241, 241, 241, 0.6) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer {
+    animation: none;
+    background: rgba(241, 241, 241, 0.6);
+  }
+}
+
+/* Tan ring focus accent — slightly stronger than the default ring-tan
+   utility, with a 2px offset against the bone background. Per brand
+   book NFR-2 §a11y. */
+.focus-ring-tan {
+  outline: none;
+}
+.focus-ring-tan:focus-visible {
+  outline: 2px solid var(--brand-tan);
+  outline-offset: 2px;
 }
 
 /* Roboto is body type per the brand book. The next/font/google variable

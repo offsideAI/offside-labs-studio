@@ -6,12 +6,16 @@ export default function HomePage() {
     <div className="container-editorial section-rhythm">
       <Eyebrow>Offside Studio · Product 01</Eyebrow>
       <h1 className="mt-4 text-5xl font-styrene font-bold tracking-tight md:text-7xl">
-        Offside CRM<span className="tan-period">.</span>
+        OffsideStudio<span className="tan-period">.</span>
       </h1>
+      <p className="mt-2 max-w-2xl text-2xl font-styrene font-bold leading-tight text-tan-text md:text-3xl">
+        Agent Marketplace.
+      </p>
       <p className="mt-6 max-w-2xl text-lg leading-relaxed text-fg-muted">
-        AI-native CRM with deeply integrated workflow automation. Built for SMB sales teams that
-        want HubSpot&apos;s CRM core, Zapier&apos;s automation flexibility, and Attio&apos;s design
-        polish — fused with AI as a first-class primitive, not a bolt-on chatbot.
+        Install a pre-built agent. Watch it deploy your entire ecommerce funnel — marketing campaign
+        launch, AEO content, ads, landing pages, email, cart recovery, payments — against your CRM.
+        Customize every step in the Agent Design Studio. Every lead pulled into the funnel becomes a
+        tracked conversion.
       </p>
 
       <div className="mt-8 flex flex-wrap items-center gap-4">
@@ -31,18 +35,20 @@ export default function HomePage() {
       <section className="mt-12">
         <Eyebrow>What ships at MVP</Eyebrow>
         <h2 className="mt-2 text-3xl font-styrene font-bold tracking-tight md:text-4xl">
-          The 80–90% of Zapier, fused with a CRM that feels new.
+          One click installs your entire ecommerce funnel.
         </h2>
         <div className="mt-8 grid gap-6 md:grid-cols-3">
           <Card>
             <CardHeader>
               <Eyebrow>Wedge 01</Eyebrow>
-              <h3 className="text-xl font-styrene font-bold">Prompt-first workflows.</h3>
+              <h3 className="text-xl font-styrene font-bold">Agent Marketplace.</h3>
             </CardHeader>
             <CardContent>
               <p className="text-fg-muted">
-                Describe the workflow in English. Claude generates the node graph. Edit on a pure
-                React Flow canvas. Durable execution on Celery + a custom Django layer.
+                A curated catalog of pre-built agents spanning the full ecommerce lifecycle — lead
+                capture, cart recovery, fulfillment, payments, customer service. Install one with a
+                click. Or describe one in English and let Claude generate it. Durable execution on
+                Celery + a custom Django layer.
               </p>
               <StatusPill tone="info">Milestones M7–M9</StatusPill>
             </CardContent>

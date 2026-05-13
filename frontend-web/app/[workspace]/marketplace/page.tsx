@@ -25,8 +25,7 @@ const CATEGORY_LABELS: Record<MarketplaceAgentCategory, string> = {
 
 // Display order — leads with the e-commerce lifecycle stages
 // (lead → conversion → fulfillment → payments → service) so a
-// browsing admin can scan the catalog top-to-bottom in the order
-// they're most likely to think about their funnel.
+// browsing admin scans the catalog top-to-bottom in funnel order.
 const CATEGORIES: MarketplaceAgentCategory[] = [
   "lead_management",
   "cart_recovery",
@@ -39,6 +38,15 @@ const CATEGORIES: MarketplaceAgentCategory[] = [
   "operations",
 ];
 
+const formatInstallCount = (n: number) => {
+  if (n < 1000) return n.toString();
+  if (n < 1_000_000) {
+    const k = n / 1000;
+    return `${k.toFixed(k < 10 ? 1 : 0).replace(/\.0$/, "")}K`;
+  }
+  return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+};
+
 export default function MarketplacePage() {
   const { active } = useActiveWorkspace();
   if (!active) return null;
@@ -49,33 +57,72 @@ const MarketplaceGrid = ({ workspaceSlug }: { workspaceSlug: string }) => {
   const [category, setCategory] = React.useState<MarketplaceAgentCategory | null>(null);
   const agents = useMarketplaceAgents(category ?? undefined);
   const list = agents.data?.results ?? [];
+  const totalInstalls = React.useMemo(
+    () => list.reduce((sum, a) => sum + (a.install_count ?? 0), 0),
+    [list],
+  );
 
   return (
-    <div className="space-y-8 px-6 py-10">
-      <header className="space-y-3">
-        <Eyebrow>OffsideStudio</Eyebrow>
-        <h1 className="text-4xl font-styrene font-bold tracking-tight md:text-5xl">
+    <div className="mx-auto max-w-7xl px-6 pb-20 pt-12 md:px-10 md:pt-16">
+      {/* HERO — generous whitespace, full Styrene display, tan period. */}
+      <header className="space-y-5">
+        <Eyebrow>OffsideStudio · Product 01</Eyebrow>
+        <h1 className="font-styrene text-5xl font-bold tracking-tight md:text-7xl">
           Agent Marketplace<span className="tan-period">.</span>
         </h1>
-        <p className="max-w-2xl text-base text-fg-muted">
-          Install a pre-built agent, customize it in the Agent Design Studio,
-          watch it run against your CRM. One click from this catalog to a
-          published, runnable workflow in your workspace.
+        <p className="max-w-2xl text-xl font-styrene font-bold leading-snug text-tan-text md:text-2xl">
+          One click installs your entire conversion funnel.
         </p>
+        <p className="max-w-2xl text-base leading-relaxed text-fg-muted md:text-lg">
+          Curated agents spanning the full ecommerce lifecycle — lead capture,
+          cart recovery, fulfillment, payments, customer service. Install one
+          with a click; customize every step in the Agent Design Studio;
+          watch every lead become a tracked conversion against your CRM.
+        </p>
+
+        {/* Stats strip — mono numbers, tabular. */}
+        <dl className="flex flex-wrap items-baseline gap-x-8 gap-y-3 pt-3 font-mono text-[11px] text-fg-muted">
+          <div>
+            <dt className="uppercase tracking-eyebrow text-tan-text">Agents</dt>
+            <dd className="mt-1 text-2xl font-styrene font-bold text-ink tabular-nums">
+              {agents.isLoading ? "—" : list.length}
+            </dd>
+          </div>
+          <div>
+            <dt className="uppercase tracking-eyebrow text-tan-text">Categories</dt>
+            <dd className="mt-1 text-2xl font-styrene font-bold text-ink tabular-nums">
+              {CATEGORIES.length}
+            </dd>
+          </div>
+          <div>
+            <dt className="uppercase tracking-eyebrow text-tan-text">Installs</dt>
+            <dd className="mt-1 text-2xl font-styrene font-bold text-ink tabular-nums">
+              {agents.isLoading ? "—" : formatInstallCount(totalInstalls)}
+            </dd>
+          </div>
+          <div>
+            <dt className="uppercase tracking-eyebrow text-tan-text">Curated by</dt>
+            <dd className="mt-1 text-2xl font-styrene font-bold text-ink">
+              Offside Labs
+            </dd>
+          </div>
+        </dl>
       </header>
 
-      <Hairline />
+      <Hairline className="my-10 md:my-14" />
 
-      <CategoryFilter active={category} onChange={setCategory} />
+      {/* Filter strip — sticky on scroll for desktop. */}
+      <div className="sticky top-14 z-10 -mx-6 mb-8 border-b hairline bg-bone/85 px-6 py-3 backdrop-blur md:-mx-10 md:px-10">
+        <CategoryFilter active={category} onChange={setCategory} />
+      </div>
 
+      {/* Grid. */}
       {agents.isLoading ? (
         <SkeletonGrid />
       ) : list.length === 0 ? (
-        <p className="rounded-sm border hairline bg-bone px-6 py-12 text-center text-fg-muted">
-          No agents in this category yet.
-        </p>
+        <EmptyState />
       ) : (
-        <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {list.map((agent) => (
             <AgentCard key={agent.id} agent={agent} workspaceSlug={workspaceSlug} />
           ))}
@@ -92,7 +139,11 @@ const CategoryFilter = ({
   active: MarketplaceAgentCategory | null;
   onChange: (next: MarketplaceAgentCategory | null) => void;
 }) => (
-  <div className="flex flex-wrap items-center gap-2">
+  <div
+    role="tablist"
+    aria-label="Filter agents by category"
+    className="flex flex-wrap items-center gap-2"
+  >
     <FilterChip selected={active === null} onClick={() => onChange(null)}>
       All
     </FilterChip>
@@ -115,11 +166,13 @@ const FilterChip = ({
 }) => (
   <button
     type="button"
+    role="tab"
+    aria-selected={selected}
     onClick={onClick}
     className={
-      "rounded-sm border px-3 py-1.5 text-xs font-medium transition-colors " +
+      "inline-flex h-9 items-center rounded-sm border px-4 text-xs font-medium transition-all duration-200 ease-out-quint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan focus-visible:ring-offset-2 active:scale-[0.97] " +
       (selected
-        ? "border-ink bg-ink text-bone"
+        ? "border-ink bg-ink text-bone shadow-soft-1"
         : "hairline bg-bone text-fg-muted hover:border-tan hover:text-ink")
     }
   >
@@ -137,32 +190,95 @@ const AgentCard = ({
   <li>
     <Link
       href={`/${workspaceSlug}/marketplace/${agent.slug}`}
-      className="block h-full rounded-sm border hairline bg-bone p-5 shadow-soft-1 transition-all hover:border-tan hover:shadow-soft-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan focus-visible:ring-offset-2"
+      className="group relative flex h-full min-h-[280px] flex-col rounded-md border hairline bg-bone p-6 shadow-soft-1 transition-all duration-300 ease-out-quint hover:-translate-y-0.5 hover:border-tan hover:shadow-soft-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan focus-visible:ring-offset-2"
     >
+      {/* Top row — icon + install count. */}
       <div className="flex items-start justify-between gap-3">
-        <span className="text-3xl leading-none" aria-hidden>
+        <span
+          className="text-5xl leading-none transition-transform duration-300 ease-out-quint group-hover:-rotate-3 group-hover:scale-105"
+          aria-hidden
+        >
           {agent.icon_emoji}
         </span>
-        <span className="font-mono text-[10px] uppercase tracking-eyebrow text-tan-text">
-          {agent.install_count} installs
+        <span className="flex items-baseline gap-1.5 font-mono text-[10px] uppercase tracking-eyebrow text-fg-muted">
+          <span className="tabular-nums text-tan-text">
+            {formatInstallCount(agent.install_count)}
+          </span>
+          <span>installs</span>
         </span>
       </div>
-      <p className="mt-3 font-styrene text-lg font-bold">{agent.name}</p>
-      <p className="mt-1 text-sm text-fg-muted line-clamp-3">{agent.description}</p>
-      <div className="mt-4 flex items-center justify-between gap-3 font-mono text-[10px]">
-        <span className="uppercase tracking-eyebrow text-tan-text">
-          {CATEGORY_LABELS[agent.category]}
-        </span>
-        <span className="text-fg-muted">{agent.author}</span>
+
+      {/* Name. */}
+      <h3 className="mt-5 font-styrene text-xl font-bold leading-tight">
+        {agent.name}
+      </h3>
+
+      {/* Description. */}
+      <p className="mt-2 text-sm leading-relaxed text-fg-muted line-clamp-3">
+        {agent.description}
+      </p>
+
+      {/* Footer — push to bottom via flex-1 spacer. */}
+      <div className="mt-auto pt-5">
+        <div className="flex items-center justify-between gap-3 border-t hairline pt-3 font-mono text-[10px]">
+          <span className="uppercase tracking-eyebrow text-tan-text">
+            {CATEGORY_LABELS[agent.category] ?? agent.category}
+          </span>
+          <span className="text-fg-muted">{agent.author}</span>
+        </div>
       </div>
+
+      {/* Subtle tan accent that fades in on hover — premium "active" cue. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-6 top-0 h-px bg-tan opacity-0 transition-opacity duration-300 ease-out-quint group-hover:opacity-60"
+      />
     </Link>
   </li>
 );
 
 const SkeletonGrid = () => (
-  <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+  <ul
+    className="grid gap-5 md:grid-cols-2 xl:grid-cols-3"
+    aria-busy
+    aria-label="Loading agents"
+  >
     {[0, 1, 2, 3, 4, 5].map((i) => (
-      <li key={i} className="h-44 animate-pulse rounded-sm border hairline bg-bone/60" />
+      <li
+        key={i}
+        className="h-[280px] rounded-md border hairline bg-bone p-6 shadow-soft-1"
+      >
+        <div className="flex h-full flex-col gap-4">
+          <div className="flex items-start justify-between">
+            <div className="h-10 w-10 animate-shimmer rounded-sm" />
+            <div className="h-3 w-20 animate-shimmer rounded-sm" />
+          </div>
+          <div className="space-y-2">
+            <div className="h-5 w-3/4 animate-shimmer rounded-sm" />
+            <div className="h-3 w-full animate-shimmer rounded-sm" />
+            <div className="h-3 w-5/6 animate-shimmer rounded-sm" />
+          </div>
+          <div className="mt-auto border-t hairline pt-3">
+            <div className="flex justify-between">
+              <div className="h-2 w-24 animate-shimmer rounded-sm" />
+              <div className="h-2 w-16 animate-shimmer rounded-sm" />
+            </div>
+          </div>
+        </div>
+      </li>
     ))}
   </ul>
+);
+
+const EmptyState = () => (
+  <div className="rounded-md border hairline bg-bone p-12 text-center shadow-soft-1">
+    <Eyebrow>No matches</Eyebrow>
+    <h2 className="mt-3 font-styrene text-2xl font-bold">
+      No agents in this category yet<span className="tan-period">.</span>
+    </h2>
+    <p className="mx-auto mt-2 max-w-md text-sm text-fg-muted">
+      We're seeding more agents across the funnel. Switch to All to see
+      everything that's available right now.
+    </p>
+  </div>
 );

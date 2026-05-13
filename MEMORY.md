@@ -13,8 +13,13 @@ CRM record views (contacts/companies/deals/tasks/notes/activities) are the under
 
 ## Current state (2026-05)
 
-- **Branch:** `main`. Up to date with `origin/main` through `9bd7e27`. M0–M7 all shipped and pushed; doc-sync commit (PRD/ROADMAP checkboxes) pending in working tree.
+- **Branch:** `main`. Up to date with `origin/main` through `ba13d83`. M0–M7 + the **M8 backend slice** are committed and pushed (`814b839` + `ba13d83`). Everything else listed below — **M8 frontend canvas + M8.S3 describe-in-English + M9 triggers + M9 actions + M9.S4 Agents Marketplace (backend + frontend + 15-agent catalog incl. the hero) + demo workspace seed + DEMO.md + repositioning to OffsideStudio — Agent Marketplace + frontend copy sweep** — is **shipped locally, awaiting commit**.
+- **Product positioning (locked, 2026-05):** *OffsideStudio — Agent Marketplace* is the default selling proposition. Two hero surfaces lead the UX: **★★ Agent Marketplace** (FR-26 / M9.S4) and **★ Agent Design Studio** (FR-12 / M8 — renamed from "Workflow node-graph editor"). CRM record views (contacts / companies / deals / tasks / notes) are the data layer agents act on, not the headline. Sidebar reorder puts Marketplace + Studio above CRM records.
+- **Demo readiness (2026-05):** 5-min stage demo scripted in `DEMO.md`. Hero agent — *Ecommerce Conversion Funnel Optimizer* (slug `ecommerce-conversion-funnel-optimizer`) — is a 10-node manual-triggered workflow: init log → marketing campaign launch → AEO content seed → ad sync → landing-page generation → create demo-funnel company → email welcome task → cart recovery task → payment confirmation task → deployment-summary note. Demo opener is "install the hero agent live."
 - **Latest commits (newest first):**
+  - `ba13d83` Updated ROADMAP.md (Revision 3 — M8 backend slice annotations)
+  - `814b839` M8 backend: AutomationVersion snapshots + automations DRF + run inspector API
+  - `e86b6a0` Sync docs: add [✅]/[🏗️]/[☑️] checkboxes across PRD + ROADMAP
   - `9bd7e27` Update MEMORY.md: M7 complete; M8 (workflow node-graph editor v1) is next
   - `e69dfa3` M7: workflow runtime v0 — apps/automations + run_advancer + idempotency + HITL
   - `eeef2cb` Update MEMORY.md: M6 complete; M7 (workflow runtime v0) is next
@@ -49,8 +54,10 @@ CRM record views (contacts/companies/deals/tasks/notes/activities) are the under
   - **M5 — complete.** Backend: apps/deals (Pipeline + Deal with stages JSONB on Pipeline + stage_id slug + filter DSL reuse), apps/tasks (polymorphic + status/priority enums + completed_at auto-stamp), apps/notes (Markdown + 24h edit window + audit), apps/activities (append-only + signal handlers on Contact/Company/Deal save + DEAL_STAGE_CHANGED). Shared RelatedType/ActivityKind/ActorKind enums in apps.activities.types. 17 new backend tests. Frontend: /[workspace]/deals/ DnD-kit kanban with optimistic stage_id PATCH on drag, deal new + detail pages, ActivityFeed + TasksTab + NotesTab reusable components integrated on contact + company + deal detail (replacing M4's "Coming in M5" stub). Sidebar Deals live; cmd-K reaches Deals.
   - **M6 — complete.** SwiftUI iOS client replaces the M0 brand-parity placeholder. Auth: KeychainStore wraps SecItem for JWT persistence; AuthStore (`@Observable`) holds `.unknown / .signedOut / .needsWorkspace / .ready(workspace)` state and bootstraps from Keychain on launch. Networking: APIClient singleton mirrors authFetch — Bearer + X-Workspace-Id + retry-on-401 with refresh; baseURL reads from Info.plist's OffsideApiBaseUrl with localhost ATS exception declared in Project.yml. Views: ContentView routes to LoginView / WorkspacePickerView / MainTabView; MainTabView gives Contacts / Companies / Deals / More tabs with `@Observable` list models, NavigationStack push to detail views, pull-to-refresh, ErrorBanner overlay, brand-correct StatusPill / Eyebrow / EmptyStateView components. Deal rows resolve stage_id → label against the workspace's pipelines. Editing, custom-fields panel, tasks/notes/activity feeds, push notifications, and OpenAPI Swift codegen are explicitly deferred (M13 push, codegen wiring is a follow-up commit).
   - **M7 — complete.** apps/automations ships the durable workflow state machine (PLAN.md §7). Models: Automation + AutomationRun + AutomationStepRun + HitlRequest + AgentPolicy with status/run-state enums and the all-important `idempotency_key` unique constraint on AutomationStepRun. graph.py defines the JSON schema (action / delay / approval / branch / wait_for_event / end), template resolution (`{{ a.b.c }}` against state_snapshot), branch-condition evaluation. actions.py is the @register-decorated dispatcher with built-ins (noop, log, crm.create_contact, crm.move_deal_stage). tasks.py owns run_advancer (SELECT FOR UPDATE on the run row, idempotency-key short-circuit on replay, tail-recursive re-enqueue) + wake_up_sweep + resume_after_hitl. hitl.py wraps PyJWT for purpose-claim'd approval tokens with 7-day default TTL. Django admin gets a Run Inspector with inline AutomationStepRun rows. 14 new tests including the load-bearing replay-doesn't-double-create-contact (TC-34 chaos slice) + wake-up sweep round-trip + approval routing. CELERY_BEAT_SCHEDULE documents the wake_up_sweep entry pending a PeriodicTask data migration.
-  - **M8 — pending (next).** Workflow node-graph editor v1 (React Flow). Frontend canvas with palette + node config drawer + draft/publish + describe-in-English Claude prompt. Maps to TC-29..TC-32.
-  - **M8–M15 — pending.** Per [ROADMAP.md](./ROADMAP.md).
+  - **M8 — Agent Design Studio v1 — all 3 user stories shipped locally** (backend committed via `814b839`; frontend awaiting commit). M8.S1: React Flow canvas + node palette + per-node config drawer + drag-from-palette + validation overlay. M8.S2: AutomationVersion immutable snapshots + 300ms debounced autosave + Publish gated on validateGraph issues + Versions slide-in panel + per-run Run Inspector at `/[workspace]/automations/[id]/runs/[runId]/` showing input/output/cost/latency/idempotency_key with manual Refresh + Cancel button + 3s live polling. M8.S3: apps/ai Django app with `AICall` telemetry model + Anthropic SDK wrapper + `automations.author_from_nl.v1` prompt using Claude tool_use + `POST /api/automations/{id}/generate_from_nl/` endpoint + frontend Describe panel with Apply/Discard review gate. **35 backend tests + 9 ai tests shipped.** Remaining: HITL HTTP decide endpoint, undo/redo, full type-mismatch validator.
+  - **M9 — Workflow engine completeness + Agents Marketplace — partially shipped locally.** M9.S1: 4 of 5 v1 trigger types — record (signal-handler dispatch via transaction.on_commit), webhook (HMAC SHA-256, public POST /api/webhooks/{token}/), schedule (cron via celery.schedules.crontab + Beat sweep, no-backlog semantics), form (public POST /api/forms/{token}/submit/ with rate limiting + 429 + Retry-After). 34 tests. AI-condition trigger deferred to M11. M9.S2: action expansion to 13 registered actions — `crm.http.request` (auth presets none/bearer/basic/custom-header, 256KB body cap, basic SSRF guard), `crm.loop` (per-item `{{ item.* }}` / `{{ index }}` templating, on_error continue/abort, 5000 hard cap, self-nest guard), CRM mutates across the M5 entities (`crm.update_contact`, `crm.create_company` + `crm.update_company`, `crm.create_deal` validating stage_id against pipeline, `crm.update_deal`, `crm.create_task` validating related_type allowlist, `crm.create_note`). 46 tests. M9.S3 Slack: pending. **M9.S4 — Agents Marketplace v1 ★★ hero — fully shipped locally**: `apps/marketplace` Django app (MarketplaceAgent workspace-agnostic catalog + WorkspaceAgentInstall audit, hand-authored migrations 0001 + 0002 with 4 new ecommerce-lifecycle category values), `MarketplaceAgentViewSet` with public AllowAny browse + manager-gated install (atomic snapshot into Automation + AutomationVersion + bumps install_count, `__INSTALLER__` sentinel resolution), wired at `/api/marketplace/`. Frontend grid + detail (read-only canvas preview) + Install button + sidebar repositioning (Marketplace + Studio above CRM records) + `/automations` empty-state pitching the Marketplace. 9 tests covering TC-92..TC-94. **15-agent catalog seeded** via `tools/seeds/marketplace.py` — the hero *Ecommerce Conversion Funnel Optimizer* (10 nodes) plus 4 originals + 10 ecommerce-lifecycle agents (Lead from form, Welcome series day 0, Abandoned cart recovery, Order received, Shipping dispatched, Payment success, Failed payment retry, Refund request handler, Post-purchase review request, Repeat-purchase nudge). M7 runtime tweak: `run_advancer` now seeds `state_snapshot.trigger = trigger_payload` on PENDING→RUNNING so `{{ trigger.* }}` templates resolve.
+  - **Demo prep — shipped locally.** `tools/seeds/demo_workspace.py` creates an idempotent demo workspace (slug `acme-demo`, owner `demo@offside.ai` / `DemoOnly123!`) with default pipeline + 8 companies + 20 contacts + 12 deals + 5 tasks + 3 notes. `DEMO.md` presenter script with setup checklist + 5-min click-by-click + common-issues table + pre-stage hash check + condensed narrative arc. Frontend copy sweep done: `Offside CRM` → `OffsideStudio` across layout.tsx / page.tsx / signup / login / accept-invite / onboarding / top-bar; `workflow` / `Automations` → `agent` / `Agent Design Studio` in user-facing copy.
+  - **M10–M15 — pending.** Per [ROADMAP.md](./ROADMAP.md).
 
 ## Locked decisions (interview Rounds 1–7)
 
@@ -77,6 +84,14 @@ Captured exhaustively in PLAN.md §5.1 and §14.0. The non-obvious ones:
 - Stripe / billing — post-MVP per POST-1.
 - APNs key — needed by M6 (iOS shell).
 - DO App Platform sizes — needed at first deploy (post-M1).
+
+## Demo-day watch-outs (2026-05)
+
+- **Live trigger on stage:** Step 5 of `DEMO.md` ("create a contact → see the agent fire") depends on the Celery worker being up. If you see no run in the editor footer within 3s of creating a contact, the worker is down — re-run `pnpm backend:up` and confirm `worker` is `Up` in `docker compose ps`.
+- **`__INSTALLER__` sentinel** in seed graphs must be resolved to the installer's user id on install. If a run fails because `created_by_id == "__INSTALLER__"` (literal string), the install endpoint's `_resolve_installer_sentinels` mis-fired — re-install the agent.
+- **Hero agent `n6` (Create funnel company record)** uses `name: "Acme Demo Funnel · {{ n2.status_code }}"`. The `200` interpolation is intentional theatrics — proves step chaining is real to the audience. If httpbin.org is unreachable, n2 will fail and the rest of the chain skips; have a screenshot ready.
+- **`ANTHROPIC_API_KEY` for Describe-in-English** (Step 5 bonus of demo) is optional — if missing or rate-limited, skip Step 5 cleanly with the verbal-only mention.
+- **Demo workspace seed creates user `demo@offside.ai` / `DemoOnly123!`** — those creds are literal in `tools/seeds/demo_workspace.py` and DEMO.md. Don't change them without updating both.
 
 ## Watch-outs
 
@@ -120,22 +135,32 @@ Located at `../radianceskincare-app/saucycart-com-backend-django/`. **Reference 
 
 ## Resume points
 
-M7 is complete. **Next milestone is M8 (workflow node-graph editor v1 — React Flow).**
+**M8 + M9.S1 + M9.S2 + M9.S4 + demo prep all shipped locally — `main` is at `ba13d83` (M8 backend slice only). ~19 slices of work are uncommitted in the working tree, ready for a single commit + push.**
 
-Verify M7 locally first:
-1. `pnpm backend:up` + `pnpm backend:migrate` (apps/automations 0001 migration creates Automation/AutomationRun/AutomationStepRun/HitlRequest/AgentPolicy) + `pnpm backend:test` (14 new automation tests including chaos-replay + wake-up sweep round-trip).
-2. Django admin → Automations → create a tiny graph (`start → action: noop → end`) → manually create an AutomationRun → confirm `run_advancer` walks it to `COMPLETED` and AutomationStepRun rows show input/output/cost/latency.
-3. Hit HITL: change the noop to an `approval` node → run → confirm status flips to `AWAITING_APPROVAL`, then call `resume_after_hitl` with a signed token to advance.
-4. Smoke the idempotency story: kill the worker mid-step (or just rerun `run_advancer` on a COMPLETED run) → no double side effect.
+**Critical-path remaining for conference demo:**
 
-To start M8 from a cold context:
-1. **Frontend canvas** — React Flow (or DnD-kit fallback) at `/[workspace]/automations/` with node palette (trigger, action, delay, branch, approval, end), node config drawer (right-side panel), connection validation, autosave to draft, publish-as-version flow.
-2. **Backend** — extend `apps.automations` with `AutomationVersion` table (or version column on Automation) so publish creates immutable graph snapshots; running automations always reference a version. Add DRF serializers + `/api/automations/{id}/versions/` endpoint.
-3. **Describe-in-English** — Claude prompt `automations.graph_from_nl.v1` taking a description + schema docs (entities + custom fields) returning a graph JSON. Streams into the canvas with a "review before save" gate.
-4. **Run inspector UI** — surface AutomationStepRun rows (already in Django admin) into a per-run web page with step input/output/cost/latency + retry/cancel.
-5. **Tests** — TC-29..TC-32 (publish a workflow, edit + republish, NL-to-graph happy path, cancel a stuck run).
+1. **Smoke pass** (~4h, requires toolchain):
+   ```bash
+   pnpm backend:up
+   pnpm backend:migrate                     # applies marketplace 0001 + 0002 + ai 0001 + automations 0002..0005
+   python -m tools.seeds.marketplace        # seeds the 15-agent catalog (incl. the hero)
+   python -m tools.seeds.demo_workspace     # seeds demo@offside.ai + acme-demo workspace + CRM data
+   pnpm backend:test                        # confirm all backend tests green
+   pnpm dev                                 # web at :3000
+   ```
+   Walk the `DEMO.md` 5-min narrative end-to-end. Hero-agent run must complete cleanly with all 10 step rows visible in the Inspector.
+2. **Commit + push** the pile (subject for a separate prompt to me — I won't push without explicit instruction).
+3. **Deploy to production URLs** — Django → DO App Platform; web → Vercel. `crm-api.offside.ai` + `app.offside.ai`.
 
-Open `§14.1` items still defer-able. M11 (AI) needs token budget config; M10 (Gmail) needs GCP Pub/Sub topic + verified domain (~1 day setup).
+**Nice-to-have if time:**
+- **M9.S3 Slack OAuth** (~2 days) — promotes the hero's `crm.http.request` placeholders to real Slack posts. Skip if time-tight; httpbin.org placeholders demo convincingly.
+- **M8 HITL HTTP decide endpoint** (~0.5 days) — needed only if a marketplace agent uses HITL approval nodes during the demo (none currently do).
+- **M9.S1 AI-condition trigger** — defers to M11 per ROADMAP.
+
+**To run the demo from a cold context** (full workflow once toolchain is up):
+1. Follow the smoke-pass commands above.
+2. Open `DEMO.md`. Walk the 5-step narrative: frame → install the 🚀 hero agent → run live → switch to Companies to see records → bonus describe-in-English → close.
+3. Pre-stage hash check (in DEMO.md §"Pre-stage hash check") returns: agents=15, hero=True, contacts=20, companies=8, JWT issues correctly.
 
 ## Revision log
 

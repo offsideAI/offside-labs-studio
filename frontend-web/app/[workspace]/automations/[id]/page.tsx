@@ -191,7 +191,7 @@ const AutomationEditor = ({
               onClick={() => setNlOpen((v) => !v)}
               aria-expanded={nlOpen}
               className="inline-flex h-9 items-center gap-1.5 rounded-sm border hairline bg-bone px-3 text-sm font-medium hover:border-tan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan"
-              title="Describe a workflow in English and let Claude propose the graph"
+              title="Describe an agent in English and let Claude propose the graph"
             >
               Describe
               <span className="font-mono text-[9px] uppercase tracking-eyebrow text-tan-text">
@@ -215,7 +215,7 @@ const AutomationEditor = ({
               disabled={startRun.isPending || !automation.published_version}
               title={
                 automation.published_version
-                  ? "Run this workflow now"
+                  ? "Run this agent now"
                   : "Publish a version first"
               }
               className="inline-flex h-9 items-center rounded-sm border hairline bg-bone px-3 text-sm font-medium hover:border-tan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tan disabled:opacity-50"

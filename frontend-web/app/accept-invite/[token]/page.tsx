@@ -35,7 +35,7 @@ export default function AcceptInvitePage() {
   if (invitation.isError || !invitation.data) {
     return (
       <div className="container-editorial section-rhythm max-w-xl">
-        <Eyebrow>Offside CRM · Invitation</Eyebrow>
+        <Eyebrow>OffsideStudio · Invitation</Eyebrow>
         <h1 className="mt-4 text-4xl font-styrene font-bold tracking-tight">
           We can&rsquo;t find that invitation<span className="tan-period">.</span>
         </h1>
@@ -52,7 +52,7 @@ export default function AcceptInvitePage() {
 
   return (
     <div className="container-editorial section-rhythm max-w-xl space-y-6">
-      <Eyebrow>Offside CRM · Invitation</Eyebrow>
+      <Eyebrow>OffsideStudio · Invitation</Eyebrow>
       <h1 className="text-4xl font-styrene font-bold tracking-tight">
         Join {detail.workspace_name}<span className="tan-period">.</span>
       </h1>

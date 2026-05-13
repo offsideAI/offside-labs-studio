@@ -18,9 +18,9 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Offside CRM",
+  title: "OffsideStudio — Agent Marketplace",
   description:
-    "AI-native CRM with deeply integrated workflow automation. Product 01 in the Offside Studio Suite.",
+    "OffsideStudio — Agent Marketplace. Install pre-built agents that automate your full ecommerce funnel — marketing campaigns, AEO, ads, landing pages, email, cart recovery, payments — against your CRM. Product 01 in the Offside Studio Suite.",
   icons: {
     icon: "/favicon.svg",
   },

@@ -20,7 +20,7 @@ export const TopBar = ({ onSearchClick }: TopBarProps) => {
     <header className="border-b hairline bg-bone/80 backdrop-blur sticky top-0 z-10">
       <div className="flex h-14 items-center justify-between gap-4 px-6">
         <div className="flex items-center gap-3">
-          <span className="font-styrene font-bold">Offside CRM</span>
+          <span className="font-styrene font-bold">OffsideStudio</span>
           <span className="text-fg-muted">/</span>
           <WorkspaceSwitcher />
         </div>
