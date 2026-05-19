@@ -50,6 +50,38 @@ Suite positioning: every Offside product (Studio, Crunch, Design, Director) shar
 
 ---
 
+## 2.1 Competitive positioning — "why not n8n / Zapier?"
+
+This is the most common objection in demos and sales calls. The canonical answer:
+
+> **n8n / Zapier are workflow tools that point *at* your CRM. OffsideStudio *is* your CRM, with agents as a first-class peer.**
+
+You wouldn't pick n8n to *be* your system of record, and you wouldn't pick HubSpot to be your workflow runtime. OffsideStudio is the deliberate merger of the two. Use this section as the source of truth for demo talking points, sales enablement, and any future `platform.offside.ai/vs` comparison page.
+
+### The five differentiators (ordered by how reliably they land)
+
+1. **Records and agents share one data model + one event bus.** A record trigger fires synchronously inside the same transaction that created the record (`apps/activities/signals.py` → `transaction.on_commit` → `triggers.fire`). No webhook hop, no JSON shuttling across an API boundary, no eventual-consistency lag. With n8n + an external CRM, every workflow is a pipe across a boundary.
+2. **Pre-built agents for the ecommerce funnel, not generic templates.** The Agents Marketplace (FR-26) ships opinionated agents that understand sales primitives — *Lead qualification* knows what a lead is, *Abandoned cart recovery* knows what a cart is. n8n's 1000+ templates are generic "connect X to Y" plumbing. Marketplace agents are pre-assembled playbooks.
+3. **AI is the authoring layer, not a node type.** Describe-in-English (FR-12 / M8.S3) turns natural language into a runnable graph via Claude tool-use. n8n's AI Agent node is an *execution step* you still wire by hand; ours is in the *authoring loop*.
+4. **One bill, one auth, one workspace, one team.** The honest TCO comparison is "n8n + a CRM (HubSpot/Salesforce) + a run-history dashboard + a Stripe-webhook handler + glue code" vs one product. Stitched-together SaaS isn't free — the cost is diffused across invoices and engineering hours.
+5. **Per-step cost telemetry + immutable versioning.** The Run Inspector surfaces `cost_cents` + `latency_ms` on every step including AI calls (NFR-6 — "no silent LLM bills"). Publishing creates an immutable `AutomationVersion`; in-flight runs finish on their original version (M8.S2). n8n shows execution logs but not first-class AI cost, and live edits can break running executions.
+
+### Counter-objections
+
+| Objection | Response |
+|---|---|
+| "n8n has 500+ integrations." | We have HTTP-request + webhook triggers covering any REST API today; named integrations (Gmail, GCal, Slack, Stripe) land M10–M11. We ship deep integrations, not shallow breadth. |
+| "n8n is open-source / self-hostable." | Different game — n8n is horizontal (IT/DevOps/data/marketing); OffsideStudio is opinionated SaaS for sales teams. Hard self-hosting requirement → not our fit. |
+| "n8n Community tier is free." | Compare apples to apples: free n8n + a paid CRM + maintained glue ≠ free. |
+| "What if we outgrow you?" | Agents are open data — a JSON graph + a Postgres schema you own. Export is a short script; we don't lock the data layer. |
+| "We already run n8n." | Keep it for IT/data-pipeline work. Use OffsideStudio for the sales motion; the two coexist via the webhook trigger (n8n posts to us to mutate a CRM record). |
+
+### Demo guidance
+
+Don't *open* with the competitive compare — it reads defensive. Lead with what the product does; deploy this when asked. The strongest single line: *"n8n connects to your CRM; OffsideStudio is your CRM, with agents as a first-class peer."* The strongest visual proof is the Run Inspector's per-step `cost_cents` column — most "AI workflow" tools have no answer to that.
+
+---
+
 ## 3. Personas
 
 ### 3.1 Manager — sales lead / owner (`P-1`)
@@ -544,6 +576,7 @@ NFRs are quality bars rather than discrete deliverables. Most are partially in p
 - **v3 — 2026-05** — added **FR-26 — Agents Marketplace v1** (P0, demo-critical) covering a workspace-agnostic curated catalog + one-click install + 4–6 seeded agents, mapped to ROADMAP M9.S4. Clarified POST-15 as the third-party developer marketplace successor to distinguish it from FR-26.
 - **v3.1 — 2026-05** — **Repositioned the entire product around "OffsideStudio — Agent Marketplace"** as the default selling proposition. Executive summary + vision rewritten to lead with the Marketplace + Design Studio hero pairing. **FR-12 renamed** from "Workflow node-graph editor" to **"Agent Design Studio"** (★ hero surface). **FR-26 promoted** to **★★ hero surface** with explicit "the headline of the product" framing. CRM record/pipeline experience repositioned as the underlying data layer that the agents act on, rather than as the primary surface. Companion edits to PLAN.md, ROADMAP.md, CLAUDE.md, MEMORY.md, TESTING.md.
 - **v3.2 — 2026-05** — FR-26 marked `[✅]`. M9.S4 fully shipped: backend + frontend (`/marketplace` grid + detail with read-only canvas preview + one-click install + sidebar repositioning) + 15-agent catalog spanning the full ecommerce lifecycle across 9 categories + demo workspace seed (`tools/seeds/demo_workspace.py` with sample contacts / companies / deals / tasks / notes) + presenter script (`DEMO.md`). **Demo headline** is now the **Ecommerce Conversion Funnel Optimizer** hero agent — a 10-node manual-triggered workflow that choreographs marketing campaign launch → AEO seed → ad sync → landing pages → email welcome → cart recovery → payments → deployment-summary note in one click.
+- **v3.3 — 2026-05** — added **§2.1 Competitive positioning** ("why not n8n / Zapier?") — the canonical answer to the most common demo objection. Five differentiators (shared data model + event bus, opinionated marketplace agents, AI as authoring layer, single-product TCO, per-step cost telemetry + immutable versioning), a counter-objections table, and demo guidance. Source of truth for sales enablement + any future `platform.offside.ai/vs` comparison page.
 
 ---
 

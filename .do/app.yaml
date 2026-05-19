@@ -1,0 +1,119 @@
+# Digital Ocean App Platform spec for the OffsideStudio backend.
+#
+# Provisions: web (Django+gunicorn) + worker (Celery) + beat (Celery Beat)
+# + migrate (PRE_DEPLOY job) + managed Postgres + managed Redis.
+#
+# Apply via: doctl apps create --spec .do/app.yaml
+# Or update: doctl apps update <APP_ID> --spec .do/app.yaml
+# Or via Dashboard: Apps → Create App → "From Source Code" → import this file.
+#
+# Replace OWNER/REPO with your GitHub coordinates before applying.
+name: offside-crm-backend
+region: nyc
+
+services:
+  - name: web
+    github:
+      repo: offsideAI/offside-labs-studio
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: backend/Dockerfile
+    source_dir: backend
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 8000
+    run_command: gunicorn offside_crm.wsgi --bind 0.0.0.0:8000 --workers 2 --timeout 120 --log-file -
+    health_check:
+      http_path: /api/health/
+      initial_delay_seconds: 30
+      period_seconds: 10
+      timeout_seconds: 5
+      failure_threshold: 3
+    routes:
+      - path: /
+    envs:
+      - { key: DJANGO_SETTINGS_MODULE, value: offside_crm.settings.prod, scope: RUN_AND_BUILD_TIME }
+      - { key: DJANGO_SECRET_KEY, type: SECRET, scope: RUN_AND_BUILD_TIME }
+      - { key: DEBUG, value: "False", scope: RUN_AND_BUILD_TIME }
+      # ALLOWED_HOSTS — Add your custom domain here once DNS lands.
+      # ${APP_DOMAIN} expands to the *.ondigitalocean.app hostname.
+      - { key: ALLOWED_HOSTS, value: "${APP_DOMAIN},crm-api.offside.ai", scope: RUN_AND_BUILD_TIME }
+      # DB + Redis URLs come from the managed clusters defined below.
+      - { key: DATABASE_URL, value: "${db.DATABASE_URL}", scope: RUN_AND_BUILD_TIME }
+      - { key: REDIS_URL, value: "${redis.DATABASE_URL}", scope: RUN_AND_BUILD_TIME }
+      # CORS / CSRF — must include the Vercel-served frontend origin.
+      - { key: CORS_ALLOWED_ORIGINS, value: "https://app.offside.ai,https://offside-labs-studio.vercel.app", scope: RUN_AND_BUILD_TIME }
+      - { key: CSRF_TRUSTED_ORIGINS, value: "https://app.offside.ai,https://offside-labs-studio.vercel.app,https://crm-api.offside.ai", scope: RUN_AND_BUILD_TIME }
+      # AI provider.
+      - { key: ANTHROPIC_API_KEY, type: SECRET, scope: RUN_AND_BUILD_TIME }
+      # Email (Resend).
+      - { key: RESEND_API_KEY, type: SECRET, scope: RUN_AND_BUILD_TIME }
+      - { key: DEFAULT_FROM_EMAIL, value: "OffsideStudio <noreply@platform.offside.ai>", scope: RUN_AND_BUILD_TIME }
+
+workers:
+  - name: worker
+    github:
+      repo: offsideAI/offside-labs-studio
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: backend/Dockerfile
+    source_dir: backend
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    run_command: celery -A offside_crm worker -l info --concurrency 2
+    envs:
+      - { key: DJANGO_SETTINGS_MODULE, value: offside_crm.settings.prod, scope: RUN_AND_BUILD_TIME }
+      - { key: DJANGO_SECRET_KEY, type: SECRET, scope: RUN_AND_BUILD_TIME }
+      - { key: DATABASE_URL, value: "${db.DATABASE_URL}", scope: RUN_AND_BUILD_TIME }
+      - { key: REDIS_URL, value: "${redis.DATABASE_URL}", scope: RUN_AND_BUILD_TIME }
+      - { key: ANTHROPIC_API_KEY, type: SECRET, scope: RUN_AND_BUILD_TIME }
+      - { key: ALLOWED_HOSTS, value: "*", scope: RUN_AND_BUILD_TIME }
+
+  - name: beat
+    github:
+      repo: offsideAI/offside-labs-studio
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: backend/Dockerfile
+    source_dir: backend
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    run_command: celery -A offside_crm beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    envs:
+      - { key: DJANGO_SETTINGS_MODULE, value: offside_crm.settings.prod, scope: RUN_AND_BUILD_TIME }
+      - { key: DJANGO_SECRET_KEY, type: SECRET, scope: RUN_AND_BUILD_TIME }
+      - { key: DATABASE_URL, value: "${db.DATABASE_URL}", scope: RUN_AND_BUILD_TIME }
+      - { key: REDIS_URL, value: "${redis.DATABASE_URL}", scope: RUN_AND_BUILD_TIME }
+      - { key: ALLOWED_HOSTS, value: "*", scope: RUN_AND_BUILD_TIME }
+
+jobs:
+  # Runs `manage.py migrate` BEFORE each release goes live. If migrations
+  # fail, the new version doesn't ship — old version keeps serving.
+  - name: migrate
+    kind: PRE_DEPLOY
+    github:
+      repo: offsideAI/offside-labs-studio
+      branch: main
+    dockerfile_path: backend/Dockerfile
+    source_dir: backend
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    run_command: python manage.py migrate --noinput
+    envs:
+      - { key: DJANGO_SETTINGS_MODULE, value: offside_crm.settings.prod, scope: RUN_AND_BUILD_TIME }
+      - { key: DJANGO_SECRET_KEY, type: SECRET, scope: RUN_AND_BUILD_TIME }
+      - { key: DATABASE_URL, value: "${db.DATABASE_URL}", scope: RUN_AND_BUILD_TIME }
+      - { key: REDIS_URL, value: "${redis.DATABASE_URL}", scope: RUN_AND_BUILD_TIME }
+      - { key: ALLOWED_HOSTS, value: "*", scope: RUN_AND_BUILD_TIME }
+
+databases:
+  - name: db
+    engine: PG
+    version: "16"
+    production: false        # dev cluster — bump to true when going production
+    cluster_name: offside-postgres
+  - name: redis
+    engine: REDIS
+    version: "7"
+    production: false
+    cluster_name: offside-redis
